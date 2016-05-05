@@ -1,0 +1,99 @@
+table {
+    border-collapse: collapse;
+}
+
+
+th, td {
+    padding-top: 5px;
+    padding-bottom: 5px;
+    padding-left: 15px;
+    padding-right: 15px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+
+tr:hover {background-color: #ddd !important;}
+
+tr:nth-child(even){background-color: #f2f2f2}
+
+th {
+    background-color: #4CAF50;
+    color: white;
+    text-align: left;
+}
+
+
+#content{
+    overflow-x: auto;
+}
+
+input[type=button]{
+    border-radius: 12px;
+    font-size: 24px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    margin: 4px 2px;
+    cursor: pointer;
+}
+
+input[type=text]:focus {
+    border: 3px solid #555;
+}
+
+#sliderLabel {
+    border: 2px solid black;
+    -webkit-border-radius: 7px;
+    -moz-border-radius: 7px;
+    border-radius: 7px;
+    cursor: pointer;
+    display: block;
+    height: 30px;
+    margin: 20px auto;
+    overflow: hidden;
+    position: relative;
+    width: 80px;
+}
+
+
+
+#sliderLabel input {
+    display: none;
+}
+#sliderLabel input:checked + #slider {
+    left: 36px;
+}
+#slider {
+    background: #c0c6c3;
+    display: block;
+    height: 30px;
+    left: -4px;
+    position: absolute;
+    top: 0px;
+    transition: left .25s ease-out;
+    width: 48px;
+    z-index: 1;
+}
+#sliderOn, #sliderOff {
+    color: white;
+    display: block;
+    font-family: verdana, arial, sans-serif;
+    font-size: 14px;
+    font-weight: bold;
+    line-height: 30px;
+    position: absolute;
+    text-align: center;
+    top: 0px;
+    width: 40px;
+}
+#sliderOn {
+    background: #002400;
+    background: linear-gradient(top,  #002400 0%,#008a00 100%);
+    left: 0px;
+}
+#sliderOff {
+    background: #870000;
+    background: linear-gradient(top,  #870000 0%,#ff0000 100%);
+    right: 0px;
+}
