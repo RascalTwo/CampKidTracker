@@ -33,6 +33,7 @@
             var username = $("#username_input").val()
             var password = $("#password_input").val()
             $("#content").load("backend.php", {action: "login", username: username, password: password})
+            $("#content").load("backend.php", {action: "content"})
         })
 
         $("body").on("click", "#add_kid_button", function(){
