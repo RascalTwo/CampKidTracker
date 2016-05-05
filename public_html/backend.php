@@ -118,7 +118,12 @@ if (count($_POST) > 0){
             break;
 
         case "poll":
-            echo last_change_time($config);
+            if (is_logged_in($_SESSION)){
+                echo last_change_time($config);
+            }
+            else{
+                echo "";
+            }
             break;
 
         case "status_change":

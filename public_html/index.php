@@ -67,10 +67,6 @@
 
         latest_data = ""
 
-        $.post("backend.php", {action: "poll"}, function(last_changed){
-            latest_data = last_changed
-        })
-
         setInterval(function(){
             $.post("backend.php", {action: "poll"}, function(last_changed){
                 if (latest_data != last_changed){
