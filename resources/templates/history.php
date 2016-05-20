@@ -3,6 +3,7 @@ $page_title = "Flordia Summer Camp Kids - History";
 include "header.php";
 ?>
         <span id="content">
+            <br>
             <span id="history">
                 <table>
                     <tbody id="history_table_body">
