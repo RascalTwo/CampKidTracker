@@ -24,7 +24,8 @@ $config = [
         "preferences" => RESOURCES . "/templates/preferences.php",
         "admin" => RESOURCES . "/templates/admin.php",
         "history" => RESOURCES . "/templates/history.php",
-        "error" => RESOURCES . "/templates/error.php"
+        "error" => RESOURCES . "/templates/error.php",
+        "about" => RESOURCES . "/templates/about.php"
     ]
 ];
 

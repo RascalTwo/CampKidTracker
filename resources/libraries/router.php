@@ -72,7 +72,7 @@ class Router{
             }
             return;
         }
-
+        $error_message = "File/Path '" . $uri . "' not found.";
         include RESOURCES . "/templates/error.php";
     }
 }

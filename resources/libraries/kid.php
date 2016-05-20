@@ -8,7 +8,7 @@ class Kid{
     public $status;
     public $modification_time;
     public $status_update_time;
-    public $visible;
+    public $hidden;
 
     public function __construct($id, $first_name, $last_name, $parents, $status){
         $this -> id = $id;
@@ -18,7 +18,15 @@ class Kid{
         $this -> status = $status;
         $this -> modification_time = time();
         $this -> status_update_time = time();
-        $this -> visible = true;
+        $this -> hidden = false;
+    }
+
+    public function is_hidden(){
+        return $this -> hidden;
+    }
+
+    public function get_full_name(){
+        return $this -> last_name . ", " . $this -> first_name;
     }
 
     private function parse_comma_split($string){
@@ -33,35 +41,67 @@ class Kid{
     }
 
     public function update_value($name, $value){
+        $changed = true;
         switch ($name){
             case "status":
-                $this -> status = $value;
-                $this -> status_update_time = time();
+                if ($this -> status !== $value){
+                    $this -> status = $value;
+                    $this -> status_update_time = time();
+                    break;
+                }
+                $changed = false;
                 break;
 
             case "parents":
-                $this -> parents = $this -> parse_comma_split($value);
+                if ($this -> parents !== $this -> parse_comma_split($value)){
+                    $this -> parents = $this -> parse_comma_split($value);
+                    break;
+                }
+                $changed = false;
                 break;
 
             case "full_name":
-                $full_name = $this -> parse_comma_split($value);
-                if (count($full_name) === 1){
+                if ($this -> get_full_name() !== $this -> parse_comma_split($value)){
+                    $full_name = $this -> parse_comma_split($value);
+                    if (count($full_name) === 1){
+                        $this -> first_name = $full_name[0];
+                        break;
+                    }
                     $this -> last_name = $full_name[0];
-                    $this -> first_name = "";
+                    $this -> first_name = $full_name[1];
                     break;
                 }
-                $this -> first_name = $full_name[1];
+                $changed = false;
                 break;
 
             case "first_name":
-                $this -> first_name = $value;
+                if ($this -> first_name !== $value){
+                    $this -> first_name = $value;
+                    break;
+                }
+                $changed = false;
                 break;
 
             case "last_name":
-                $this -> last_name = $value;
+                if ($this -> last_name !== $value){
+                    $this -> last_name = $value;
+                    break;
+                }
+                $changed = false;
+                break;
+
+            case "hidden":
+                if ($this -> hidden !== ($value === "true")){
+                    $this -> hidden = ($value === "true");
+                    break;
+                }
+                $changed = false;
                 break;
         }
-        $this -> modification_time = time();
+        if ($name !== "status" && $name !== "hidden"){
+            $this -> modification_time = time();
+        }
+        return $changed;
     }
 
     public function get_cell($name, $edit, $account){
@@ -85,10 +125,10 @@ class Kid{
 
             case "full_name":
                 if ($edit){
-                    $response .= "<input size='15' type='text' id='" . $this -> id . "-full_name' value='" . $this -> last_name . ", " . $this -> first_name . "'>";
+                    $response .= "<input size='15' type='text' id='" . $this -> id . "-full_name' value='" . $this -> get_full_name() . "'>";
                     continue;
                 }
-                $response .= $this -> last_name . ", " . $this -> first_name;
+                $response .= $this -> get_full_name();
                 break;
 
             case "parents":
@@ -112,13 +152,19 @@ class Kid{
                 $response .= "<input " . $name . " type='radio' id='" . $this -> id . "-transit-status' value='transit' " . (($this -> status === "transit") ? "checked" : "") . "><br>";
                 break;
 
-            case "controls":
+            case "options":
                 if ($account -> has_access("user")){
                     continue;
                 }
                 elseif ($account -> has_access("admin")){
                     $response .= "<input id='" . $this -> id . "-delete' type='button' value='Delete'>";
                     $response .= "<br>";
+                    if ($this -> is_hidden()){
+                        $response .= "<input id='" . $this -> id . "-unhide' type='button' value='Un-Hide'>";
+                    }
+                    else{
+                        $response .= "<input id='" . $this -> id . "-hide' type='button' value='Hide'>";
+                    }
                 }
                 if ($edit){
                     $response .= "<input id='" . $this -> id . "-confirm_edit' type='button' value='Confirm Edit'>";
@@ -129,6 +175,14 @@ class Kid{
 
             case "id":
                 $response .= $this -> id;
+                break;
+
+            case "changed":
+                $response .= "Modified: " . date("m-d-y g:i A", $this -> modification_time) . "<br>";
+                $response .= "<span class='change_time' time='" . $this -> modification_time . "'></span>";
+                $response .= "<br>";
+                $response .= "Status Updated: " . date("m-d-y g:i A", $this -> status_update_time) . "<br>";
+                $response .= "<span class='change_time' time='" . $this -> status_update_time . "'></span>";
                 break;
         }
         return $response . "</td>";

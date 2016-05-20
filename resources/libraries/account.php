@@ -1,8 +1,8 @@
 <?php
 
 class Account{
-    private $id;
-    private $display_name;
+    public $id;
+    public $display_name;
     private $username;
     private $password;
     private $salt;
@@ -29,51 +29,50 @@ class Account{
                 [
                     "text" => "<th>Full Name</th>",
                     "name" => "full_name",
-                    "enabled" => false,
-                    "sort_by" => false,
-                    "position" => 9
-                ],
-                [
-                    "text" => "<th>First Name</th>",
-                    "name" => "first_name",
                     "enabled" => true,
-                    "sort_by" => false,
                     "position" => 1
-                ],
-                [
-                    "text" => "<th>Last Name</th>",
-                    "name" => "last_name",
-                    "enabled" => true,
-                    "sort_by" => true,
-                    "position" => 9
                 ],
                 [
                     "text" => "<th>Parents</th>",
                     "name" => "parents",
-                    "enabled" => false,
-                    "sort_by" => false,
-                    "position" => 3
+                    "enabled" => true,
+                    "position" => 2
                 ],
                 [
                     "text" => "<th>Status</th>",
                     "name" => "status",
                     "enabled" => true,
-                    "sort_by" => false,
-                    "position" => 2
+                    "position" => 3
+                ],
+                [
+                    "text" => "<th>Options</th>",
+                    "name" => "options",
+                    "enabled" => true,
+                    "position" => 4
+                ],
+                [
+                    "text" => "<th>Changed</th>",
+                    "name" => "changed",
+                    "enabled" => true,
+                    "position" => 5
+                ],
+                [
+                    "text" => "<th>First Name</th>",
+                    "name" => "first_name",
+                    "enabled" => false,
+                    "position" => 6
+                ],
+                [
+                    "text" => "<th>Last Name</th>",
+                    "name" => "last_name",
+                    "enabled" => false,
+                    "position" => 7
                 ],
                 [
                     "text" => "<th>ID</th>",
                     "name" => "id",
                     "enabled" => false,
-                    "sort_by" => false,
-                    "position" => 9
-                ],
-                [
-                    "text" => "<th>Controls</th>",
-                    "name" => "controls",
-                    "enabled" => true,
-                    "sort_by" => false,
-                    "position" => 4
+                    "position" => 8
                 ]
             ],
             "theme" => "full"
@@ -86,12 +85,8 @@ class Account{
         return $this -> username;
     }
 
-    public function get_id(){
-        return $this -> id;
-    }
-
     public function username_match($username){
-        return ($this -> username === $username);
+        return ($this -> username === strtolower($username));
     }
 
     public function password_match($password){
@@ -102,16 +97,45 @@ class Account{
         return ($this -> access_level === $access);
     }
 
+    public function has_atleast_access($access){
+        switch ($access) {
+            case "admin":
+                return ($this -> access_level === $access);
+                break;
+
+            case "mod":
+                return ($this -> access_level === "mod" || $this -> access_level === "admin");
+                break;
+
+            case "user":
+                return true;
+                break;
+        }
+    }
+
     public function login(){
         $this -> last_online = time();
     }
 
+    private function parse_raw_columns($raw_columns){
+        $raw_columns = explode(";", $raw_columns);
+        $columns = [];
+        foreach ($raw_columns as $raw_column){
+            $key = explode(":", $raw_column)[0];
+            $enabled = explode(":", explode(",", $raw_column)[0])[1];
+            $position = explode(",", $raw_column)[1];
+            $columns[$key] = ["enabled" => $enabled, "position" => $position];
+        }
+        return $columns;
+    }
+
     public function update_preferences($columns, $theme){
+        $columns = $this -> parse_raw_columns($columns);
         $this -> preferences["theme"] = $theme;
         foreach ($columns as $new_col_key => $new_col) {
             foreach ($this -> preferences["columns"] as $pref_col_key => $pref_col){
                 if ($pref_col["name"] === $new_col_key){
-                    $this -> preferences["columns"][$pref_col_key]["enabled"] = $new_col["enabled"];
+                    $this -> preferences["columns"][$pref_col_key]["enabled"] = $new_col["enabled"] === "true";
                     $this -> preferences["columns"][$pref_col_key]["position"] = $new_col["position"];
                 }
             }
@@ -155,6 +179,32 @@ class Account{
         }
         return $response;
     }
+
+    public function to_table_row(){
+        $response = "<tr id='" . $this -> id . "'>";
+        $response .= "<td>";
+        $response .= $this -> display_name;
+        $response .= "</td>";
+        $response .= "<td>";
+        $response .= $this -> username;
+        $response .= "</td>";
+        $response .= "<td>";
+        $response .= ucfirst($this -> access_level);
+        $response .= "</td>";
+        $response .= "<td>";
+        if ($this -> last_online === NULL){
+            $response .= "Never";
+        }
+        else{
+            $response .= date("m-d-y g:i A", $this -> last_online);
+        }
+        $response .= "</td>";
+        $response .= "<td>";
+        $response .= "<input type='button' value='Delete Account' id='" . $this -> id . "-delete_account'>";
+        $response .= "</td>";
+        $response .= "</tr>";
+        return $response;
+    }
 }
 
 function load_accounts($path){
@@ -166,6 +216,15 @@ function load_accounts($path){
 
 function save_accounts($accounts, $path){
     file_put_contents($path, serialize($accounts));
+}
+
+function get_account($id, $path){
+    $accounts = load_accounts($path);
+    foreach ($accounts as $account){
+        if ($account -> id == $id){
+            return $account;
+        }
+    }
 }
 
 ?>

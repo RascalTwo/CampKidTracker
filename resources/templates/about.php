@@ -1,11 +1,9 @@
 <?php
-$page_title = "Flordia Summer Camp Kids - Admin";
+$page_title = "Flordia Summer Camp Kids - About";
 include "header.php";
 ?>
         <span id="content">
-            <pre>
-                <?php echo $error_message; ?>
-            </pre>
+            <h1>About</h1>
         </span>
     </body>
     <script type="text/javascript">
