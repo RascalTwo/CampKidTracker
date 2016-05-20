@@ -19,6 +19,7 @@ include "header.php";
             </span>
         </span>
     </body>
+    <?php include "footer.php"; ?>
     <script type="text/javascript">
         function pollUpdate(){
             $.get("api/history/poll", function(response){

@@ -8,6 +8,7 @@ include "header.php";
             </pre>
         </span>
     </body>
+    <?php include "footer.php"; ?>
     <script type="text/javascript">
     </script>
 </html>

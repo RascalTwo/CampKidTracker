@@ -6,6 +6,7 @@ include "header.php";
             <h1>About</h1>
         </span>
     </body>
+    <?php include "footer.php"; ?>
     <script type="text/javascript">
     </script>
 </html>

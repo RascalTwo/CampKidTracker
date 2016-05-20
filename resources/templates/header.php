@@ -2,10 +2,10 @@
 <html lang="en">
     <head>
         <meta charset="utf-8">
+        <meta name="viewport" content="width=320, initial-scale=1">
         <title><?php echo $page_title; ?></title>
 
         <link rel="stylesheet" type="text/css" href="css/main.css">
-        <script src="js/jquery-2.2.3.min.js"></script>
     </head>
     <body>
         <span id="navigation">

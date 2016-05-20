@@ -10,6 +10,7 @@ include "header.php";
             <input type="button" id="login_button" value="Login">
         </span>
     </body>
+    <?php include "footer.php"; ?>
     <script type="text/javascript">
         $("#login_button").click(function(){
             var username = $("#username_input").val();

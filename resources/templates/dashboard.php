@@ -30,7 +30,7 @@ include "header.php";
             <?php } ?>
         </span>
     </body>
-
+    <?php include "footer.php"; ?>
     <script type="text/javascript">
         function pollUpdate(){
             $.get("api/kid/poll", function(response){

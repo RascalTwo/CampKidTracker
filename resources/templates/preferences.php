@@ -14,6 +14,7 @@ include "header.php";
             </span>
         </span>
     </body>
+    <?php include "footer.php"; ?>
     <script type="text/javascript">
         $("#save_button").click(function(){
             var options = {};
