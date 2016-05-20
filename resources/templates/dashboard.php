@@ -3,6 +3,7 @@ $page_title = "Flordia Summer Camp Kids - Dashboard";
 include "header.php";
 ?>
         <span id="content">
+            <br>
             <span id="kid_table">
                 <table>
                     <tbody id="kid_table_body">

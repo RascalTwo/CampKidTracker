@@ -3,6 +3,7 @@ $page_title = "Flordia Summer Camp Kids - Admin";
 include "header.php";
 ?>
         <span id="content">
+            <br>
             <span id="hidden_kid_table">
                 <table>
                     <tbody id="kid_table_body">
@@ -54,6 +55,32 @@ include "header.php";
                     setTimeout(updateClocks, 1000);
                 }
             })
+        }
+
+        function updateClocks(){
+            $(".change_time").each(function(){
+                var seconds_sinse = Math.floor(new Date().getTime() / 1000) - parseInt(this.getAttribute("time"));
+                var days = Math.floor(seconds_sinse / (24*60*60));
+                var hours = Math.floor(seconds_sinse / (60*60));
+                var minutes = Math.floor(seconds_sinse / (60));
+                var message = "";
+                if (days === 0 && hours === 0 && minutes === 0){
+                    message = "Less then a minute ago...";
+                }
+                else if (days === 0 && hours == 0){
+                    message = minutes + " minutes ago";
+                }
+                else if (days === 0){
+                    minutes -= hours * 60;
+                    message = hours + " hours and " + minutes + " minutes ago";
+                }
+                else{
+                    minutes -= hours * 60;
+                    hours -= 24 * days;
+                    message = days + " days, " + hours + " hours, and " + minutes + " minutes ago";
+                }
+                $(this).html(message);
+            });
         }
 
         function listAccounts(){
@@ -139,6 +166,8 @@ include "header.php";
         pollUpdate();
 
         setInterval(pollUpdate, 2500);
+
+        setInterval(updateClocks, 60000);
 
         var editing = [];
 

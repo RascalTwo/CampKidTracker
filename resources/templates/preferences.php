@@ -3,13 +3,15 @@ $page_title = "Flordia Summer Camp Kids - Preferences";
 include "header.php";
 ?>
         <span id="content">
-            <h1>Preferences</h1>
-            <table>
-                <tbody>
-                    <?php echo $_SESSION["login"]["account"] -> table_header(true); ?>
-                </tbody>
-            </table>
-            <input id="save_button" type="button" value="Save">
+            <br>
+            <span id="preferences">
+                <table>
+                    <tbody>
+                        <?php echo $_SESSION["login"]["account"] -> table_header(true); ?>
+                    </tbody>
+                </table>
+                <input id="save_button" type="button" value="Save">
+            </span>
         </span>
     </body>
     <script type="text/javascript">

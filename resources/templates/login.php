@@ -3,7 +3,7 @@ $page_title = "Flordia Summer Camp Kids - Login";
 include "header.php";
 ?>
         <span id="content">
-            <h1>Login</h1>
+            <br>
             Username: <input class="lowercase_input" type="text" id="username_input"><br>
             Password: <input type="text" id="password_input"><br>
             <p id="login_response"></p>
