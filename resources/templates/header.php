@@ -5,7 +5,7 @@
         <title><?php echo $page_title; ?></title>
 
         <link rel="stylesheet" type="text/css" href="css/main.css">
-        <script src="js/jquery-2.2.0.js"></script>
+        <script src="js/jquery-2.2.3.min.js"></script>
     </head>
     <body>
         <span id="navigation">
