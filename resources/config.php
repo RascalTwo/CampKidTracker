@@ -1,5 +1,5 @@
 <?php
-define("PUBLIC_HTML", realpath(__DIR__ . "/../public_html"));
+define("PUBLIC_HTML", realpath(__DIR__ . "/../public"));
 define("RESOURCES", realpath(__DIR__ . "/../resources"));
 
 $config = [
