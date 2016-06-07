@@ -21,10 +21,6 @@ class Kid{
         $this -> hidden = false;
     }
 
-    public function is_hidden(){
-        return $this -> hidden;
-    }
-
     public function get_full_name(){
         return $this -> last_name . ", " . $this -> first_name;
     }
@@ -91,8 +87,8 @@ class Kid{
                 break;
 
             case "hidden":
-                if ($this -> hidden !== ($value === "true")){
-                    $this -> hidden = ($value === "true");
+                if ($this -> hidden !== $value){
+                    $this -> hidden = $value;
                     break;
                 }
                 $changed = false;
@@ -140,26 +136,29 @@ class Kid{
                 break;
 
             case "status":
-                $name = "name='" . $this -> id . "-status'";
+                $name = "name='" . $this -> id . "-kid_status'";
 
-                $response .= "<label for='" . $this -> id . "-in-status'>In</label>";
-                $response .= "<input " . $name . " type='radio' id='" . $this -> id . "-in-status' value='in' " . (($this -> status === "in") ? "checked" : "") . "><br>";
+                $response .= "<label for='" . $this -> id . "-in-kid_status'>In</label>";
+                $response .= "<input " . $name . " type='radio' id='" . $this -> id . "-in-kid_status' value='in' " . (($this -> status === "in") ? "checked" : "") . "><br>";
 
-                $response .= "<label for='" . $this -> id . "-out-status'>Out</label>";
-                $response .= "<input " . $name . " type='radio' id='" . $this -> id . "-out-status' value='out' " . (($this -> status === "out") ? "checked" : "") . "><br>";
+                $response .= "<label for='" . $this -> id . "-out-kid_status'>Out</label>";
+                $response .= "<input " . $name . " type='radio' id='" . $this -> id . "-out-kid_status' value='out' " . (($this -> status === "out") ? "checked" : "") . "><br>";
 
-                $response .= "<label for=" . $this -> id . "-transit-status'>Transit</label>";
-                $response .= "<input " . $name . " type='radio' id='" . $this -> id . "-transit-status' value='transit' " . (($this -> status === "transit") ? "checked" : "") . "><br>";
+                $response .= "<label for=" . $this -> id . "-transit-kid_status'>Transit</label>";
+                $response .= "<input " . $name . " type='radio' id='" . $this -> id . "-transit-kid_status' value='transit' " . (($this -> status === "transit") ? "checked" : "") . "><br>";
+
+                $response .= "<label for=" . $this -> id . "-parentarrived-kid_status'>Parent Arrived</label>";
+                $response .= "<input " . $name . " type='radio' id='" . $this -> id . "-parentarrived-kid_status' value='parentarrived' " . (($this -> status === "parentarrived") ? "checked" : "") . "><br>";
                 break;
 
             case "options":
-                if ($account -> has_access("user")){
+                if ($account -> access_level_is("user")){
                     continue;
                 }
                 elseif ($account -> has_access("admin")){
                     $response .= "<input id='" . $this -> id . "-delete' type='button' value='Delete'>";
                     $response .= "<br>";
-                    if ($this -> is_hidden()){
+                    if ($this -> hidden){
                         $response .= "<input id='" . $this -> id . "-unhide' type='button' value='Un-Hide'>";
                     }
                     else{

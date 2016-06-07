@@ -6,105 +6,96 @@ require_once $config["class"]["kid"];
 require_once $config["class"]["logging"];
 require_once $config["class"]["utility"];
 
-$router = new Router;
-
+$router = new Router($config["path"]["assets"], $config["path"]["templates"]);
 $logger = new Logger($config["path"]["logs"]);
 
-function logged_in(){
-    return (array_key_exists("login", $_SESSION) && $_SESSION["login"]["account"] -> last_online + (60 * 60) > time());
+function is_logged_in(){
+    global $config;
+    $self = get_self();
+    if ($self === NULL){
+        return false;
+    }
+    if ($self -> last_online + (60 * 60) <= time()){
+        return false;
+    }
+    foreach (load_accounts($config["database"]["accounts"]) as $account){
+        if ($self -> id !== $account -> id){
+            continue;
+        }
+        return true;
+    }
+    return false;
 }
 
 function get_self(){
     if (array_key_exists("login", $_SESSION)){
         return $_SESSION["login"]["account"];
     }
-    return;
+    return NULL;
 }
 
-function error_page($error_message){
-    global $config;
-    include $config["templates"]["error"];
-}
-
-function redirect($path){
-    echo "<script type='text/javascript'>window.location = 'http://" . $_SERVER["HTTP_HOST"] . $path . "'</script>";
-}
-
-#3/3
-$router -> get("/", function(){
-    global $config;
-    if (!logged_in()){
+$router -> get("/", function($router){
+    if (!is_logged_in()){
         unset($_SESSION["login"]);
-        redirect("/login");
+        $router -> redirect("/login");
         return;
     }
-    redirect("/dashboard");
+    $router -> redirect("/dashboard");
     return;
 });
 
-#3/3
-$router -> get("/login", function(){
-    global $config;
-    include $config["templates"]["login"];
+$router -> get("/login", function($router){
+    $router -> show_template("login", "Login");
     return;
 });
 
-#3/3
-$router -> get("/dashboard", function(){
-    global $config;
-    if (!logged_in()){
+$router -> get("/dashboard", function($router){
+    if (!is_logged_in()){
         unset($_SESSION["login"]);
-        redirect("/login");
+        $router -> redirect("/login");
         return;
     }
-    include $config["templates"]["dashboard"];
+    $router -> show_template("dashboard", "Dashboard", ["kid_table"]);
     return;
 });
 
-#3/3
-$router -> get("/preferences", function(){
-    global $config;
-    if (!logged_in()){
+$router -> get("/preferences", function($router){
+    if (!is_logged_in()){
         unset($_SESSION["login"]);
-        redirect("/login");
+        $router -> redirect("/login");
         return;
     }
-    include $config["templates"]["preferences"];
+    $router -> show_template("preferences", "Preferences");
     return;
 });
 
-#3/3
-$router -> get("/admin", function(){
-    global $config;
-    if (!logged_in()){
+$router -> get("/admin", function($router){
+    if (!is_logged_in()){
         unset($_SESSION["login"]);
-        redirect("/login");
+        $router -> redirect("/login");
         return;
     }
     if (get_self() -> has_access("admin")){
-        include $config["templates"]["admin"];
+        $router -> show_template("admin", "Admin", ["kid_table"]);
         return;
     }
     header("HTTP/1.0 401 Unauthorized");
+    $router -> show_error_page("Only accounts with admin access can access this resource.", "401 Unauthorized");
     return;
 });
 
-#3/3
-$router -> get("/history", function(){
-    global $config;
-    if (!logged_in()){
+$router -> get("/history", function($router){
+    if (!is_logged_in()){
         unset($_SESSION["login"]);
-        redirect("/login");
+        $router -> redirect("/login");
         return;
     }
-    include $config["templates"]["history"];
+    $router -> show_template("history", "History");
     return;
 });
 
-#3/3
-$router -> get("/about", function(){
-    global $config;
-    include $config["templates"]["about"];
+$router -> get("/about", function($router){
+    $router -> show_template("about", "About");
     return;
 });
 
@@ -113,27 +104,28 @@ $router -> get("/about", function(){
  * @param $_POST["username"] - Username of account logging into.
  * @param $_POST["password"] - Password of account logging into.
  *
- * @return Javascript.
+ * @return Boolean result.
  */
-$router -> post("/api/account/login", function(){
+$router -> post("/api/account/login", function($router){
     global $config, $logger;
 
-    $logged_in = false;
     $accounts = load_accounts($config["database"]["accounts"]);
     if (count($accounts) === 0){
-        $new_account = new Account(generate_id($config["database"]["ids"]), $_POST["display_name"], strtolower($_POST["username"]), $_POST["password"], "admin");
+        $new_account = new Account(generate_id($config["database"]["ids"]), "Owner", strtolower($_POST["username"]), $_POST["password"], "admin");
         array_push($accounts, $new_account);
     }
+
+    $logged_in = false;
     foreach ($accounts as $key => $_){
         if ($accounts[$key] -> username_match($_POST["username"])){
             if ($accounts[$key] -> password_match($_POST["password"])){
                 $logged_in = true;
                 $accounts[$key] -> login();
                 $_SESSION["login"]["account"] = $accounts[$key];
-                $event = new Account_Login_Event($_SERVER["REMOTE_ADDR"], $accounts[$key] -> get_username(), true);
+                $event = new Account_Login_Event($_SERVER["REMOTE_ADDR"], $accounts[$key] -> username, true);
             }
             else{
-                $event = new Account_Login_Event($_SERVER["REMOTE_ADDR"], $accounts[$key] -> get_username(), false);
+                $event = new Account_Login_Event($_SERVER["REMOTE_ADDR"], $accounts[$key] -> username, false);
             }
         }
     }
@@ -146,11 +138,18 @@ $router -> post("/api/account/login", function(){
 
     if ($logged_in){
         save_accounts($accounts, $config["database"]["accounts"]);
-        echo "window.location = window.location.origin + '/dashboard';";
+        echo json_encode([
+            "success" => true,
+            "message" => "Logged in successfully!",
+            "redirect" => "http://" . $_SERVER["HTTP_HOST"] . "/dashboard"
+        ]);
         return;
     }
 
-    echo "$('#login_response').html('Incorrect Username or Password!')";
+    echo json_encode([
+        "success" => false,
+        "message" => "Invalid login username or password!"
+    ]);
     return;
 }, ["username" => true, "password" => true]);
 
@@ -161,69 +160,80 @@ $router -> post("/api/account/login", function(){
  * @param $_POST["password"] - Password of new account.
  * @param $_POST["access_level"] - Access level of new account.
  *
- * @return Javascript.
+ * @return Text message.
  */
-$router -> post("/api/account/create", function(){
+$router -> post("/api/account/create", function($router){
     global $config, $logger;
-    if (!array_key_exists("force", $_POST) && !logged_in()){
+    if (!is_logged_in()){
         header("HTTP/1.0 401 Unauthorized");
-        error_page("Must be logged in.");
+        $router -> show_error_page("Must be logged in.", "401 Unauthorized");
         return;
     }
-    if (!array_key_exists("force", $_POST) && !(get_self() -> has_access("admin"))){
+    if (!get_self() -> has_access("admin")){
         header("HTTP/1.0 403 Forbidden");
-        error_page("Only accounts with an access level of 'admin' can create accounts.");
+        $router -> show_error_page("Only accounts with an access level of 'admin' can create accounts.", "403 Forbidden");
         return;
     }
-    $accounts = load_accounts($config["database"]["accounts"]);
+
     $new_account = new Account(generate_id($config["database"]["ids"]), $_POST["display_name"], strtolower($_POST["username"]), $_POST["password"], $_POST["access_level"]);
+
+    $accounts = load_accounts($config["database"]["accounts"]);
     foreach ($accounts as $key => $_){
-        if ($accounts[$key] -> get_username() !== $new_account -> get_username()){
+        if ($accounts[$key] -> username !== $new_account -> username){
             continue;
         }
-        $logger -> log(new Custom_Event($_SERVER["REMOTE_ADDR"], get_self() -> get_username(), "Failed to create account", "Username '" . $new_account -> get_username() . "' already exists"));
-        echo "$('#create_response').html('Username already exists!');";
+        $logger -> log(new Custom_Event($_SERVER["REMOTE_ADDR"], get_self() -> username, "Failed to create account", "Username '" . $new_account -> username . "' already exists"));
+        echo json_encode([
+            "success" => false,
+            "message" => "Username '" . $_POST["username"] . "' already exists!"
+        ]);
         return;
     }
 
-    $logger -> log(new Creation_Event($_SERVER["REMOTE_ADDR"], get_self() -> get_username(), "account", ["Display Name" => $new_account -> display_name, "Username" => $new_account -> get_username(), "ID" => $new_account -> id]));
+    $logger -> log(new Creation_Event($_SERVER["REMOTE_ADDR"], get_self() -> username, "account", ["Display Name" => $new_account -> display_name, "Username" => $new_account -> username, "ID" => $new_account -> id]));
 
-    array_push($accounts, $new_account);
+    $accounts[] = $new_account;
     save_accounts($accounts, $config["database"]["accounts"]);
-    echo "$('#create_response').html('Account Successfully Created!');";
+    echo json_encode([
+        "success" => false,
+        "message" => "Account Successfully Created!"
+    ]);
+    return;
 }, ["display_name" => true, "username" => true, "password" => true, "access_level" => true]);
 
 /**
  * Delete an account.
  * @param $_POST["id"] - ID of account to delete.
- *
- * @return string - HTML code for table row.
  */
-$router -> post("/api/account/delete", function(){
+$router -> post("/api/account/delete", function($router){
     global $config, $logger;
-    if (!logged_in()){
+    if (!is_logged_in()){
         header("HTTP/1.0 401 Unauthorized");
-        error_page("Must be logged in");
+        $router -> show_error_page("Must be logged in", "401 Unauthorized");
         return;
     }
     if (!(get_self() -> has_access("admin"))){
-        header("HTTP/1.0 401 Unauthorized");
-        error_page("Only accounts with an access level of 'admin' can delete accounts.");
+        header("HTTP/1.0 403 Forbidden");
+        $router -> show_error_page("Only accounts with an access level of 'admin' can delete accounts.", "403 Forbidden");
         return;
     }
     if (get_self() -> id === $_POST["id"]){
         header("HTTP/1.0 400 Bad Request");
-        error_page("You can not delete your own account.");
+        $router -> show_error_page("You can not delete your own account.", "400 Bad Request");
         return;
     }
     $account = get_account($_POST["id"], $config["database"]["accounts"]);
 
-    $logger -> log(new Deletion_Event($_SERVER["REMOTE_ADDR"], get_self() -> get_username(), "account", ["Display Name" => $account -> display_name, "Username" => $account -> get_username(), "ID" => $account -> id]));
+    $logger -> log(new Deletion_Event($_SERVER["REMOTE_ADDR"], get_self() -> username, "account", ["Display Name" => $account -> display_name, "Username" => $account -> username, "ID" => $account -> id]));
 
     $accounts = load_accounts($config["database"]["accounts"]);
     unset($accounts[array_search($account, $accounts)]);
     save_accounts($accounts, $config["database"]["accounts"]);
-    echo "";
+    echo json_encode([
+        "success" => true,
+        "message" => "Account deleted!"
+    ]);
+    return;
 }, ["id" => true]);
 
 /**
@@ -231,21 +241,24 @@ $router -> post("/api/account/delete", function(){
  *
  * @return HTML.
  */
-$router -> get("/api/account/list", function(){
+$router -> get("/api/account/list", function($router){
     global $config;
-    if (!logged_in()){
+    if (!is_logged_in()){
         header("HTTP/1.0 401 Unauthorized");
-        error_page("Must be logged in");
+        $router -> show_error_page("Must be logged in", "401 Unauthorized");
         return;
     }
     if (!(get_self() -> has_access("admin"))){
-        header("HTTP/1.0 401 Unauthorized");
-        error_page("Only accounts with an access level of 'admin' can list accounts.");
+        header("HTTP/1.0 403 Forbidden");
+        $router -> show_error_page("Only accounts with an access level of 'admin' can list accounts.", "403 Forbidden");
         return;
     }
+    $response = [];
     foreach (load_accounts($config["database"]["accounts"]) as $account){
-        echo $account -> to_table_row();
+        $response[] = $account -> to_table_row();
     }
+    echo json_encode($response);
+    return;
 });
 
 /**
@@ -253,29 +266,30 @@ $router -> get("/api/account/list", function(){
  * @param $_POST["columns"] - Preferences of columns.
  * @param $_POST["theme"] - Theme chosen.
  *
- * @return Javascript.
+ * @return HTML.
  */
-$router -> post("/api/account/edit", function(){
+$router -> post("/api/account/edit", function($router){
     global $config, $logger;
-    if (!logged_in()){
+    if (!is_logged_in()){
         header("HTTP/1.0 401 Unauthorized");
-        error_page("Must be logged in");
+        $router -> show_error_page("Must be logged in", "401 Unauthorized");
         return;
     }
 
     $accounts = load_accounts($config["database"]["accounts"]);
     foreach ($accounts as $key => $_){
-        if ($accounts[$key] -> id !== $_SESSION["login"]["account"] -> id){
+        if ($accounts[$key] -> id !== get_self() -> id){
             continue;
         }
         $accounts[$key] -> update_preferences($_POST["columns"], $_POST["theme"]);
         $_SESSION["login"]["account"] = $accounts[$key];
     }
 
-    $logger -> log(new Edit_Event($_SERVER["REMOTE_ADDR"], get_self() -> get_username(), "account", ["Display Name" => get_self() -> display_name, "Username" => get_self() -> get_username(), "ID" => get_self() -> id], ["Columns", "Theme"]));
+    $logger -> log(new Edit_Event($_SERVER["REMOTE_ADDR"], get_self() -> username, "account", ["Display Name" => get_self() -> display_name, "Username" => get_self() -> username, "ID" => get_self() -> id], ["Columns", "Theme"]));
 
     save_accounts($accounts, $config["database"]["accounts"]);
-    echo "$(\"tbody\").html(\"" . $_SESSION["login"]["account"] -> table_header(true). "\");";
+    echo $_SESSION["login"]["account"] -> table_header(true);
+    return;
 }, ["columns" => true, "theme" => true]);
 
 /**
@@ -283,17 +297,14 @@ $router -> post("/api/account/edit", function(){
  *
  * @return string - UTC/Epoch account modification time.
  */
-$router -> get("/api/kid/poll", function(){
+$router -> get("/api/kid/poll", function($router){
     global $config;
-    if (!logged_in()){
+    if (!is_logged_in()){
         header("HTTP/1.0 401 Unauthorized");
-        error_page("Must be logged in");
+        $router -> show_error_page("Must be logged in", "401 Unauthorized");
         return;
     }
 
-    if (!file_exists($config["database"]["kids"])){
-        file_put_contents($config["database"]["kids"], serialize([]));
-    }
     echo filemtime($config["database"]["kids"]);
     return;
 });
@@ -301,46 +312,44 @@ $router -> get("/api/kid/poll", function(){
 /**
  * Get Javascript code to create table row for all kids modified after provided UTC/Epoch time.
  * @param  $_POST["since"] - Last time the client has received data.
- * @param  $_POST["first"] - Is this the first request for data.
+ * @param  $_POST["append"] - Is this the append request for data.
  * @param  $_POST["editing"] - List of kid ids that are currently being edited.
  * @param  $_POST["hidden"] - Should hidden kids be rendered, or not.
  *
- * @return string - Javascript code to be evaluated by the client.
+ * @return JSON array of dicts with action and HTML code.
  */
-$router -> post("/api/kid/list", function(){
+$router -> post("/api/kid/list", function($router){
     global $config;
-    if (!logged_in()){
+    if (!is_logged_in()){
         header("HTTP/1.0 401 Unauthorized");
-        error_page("Must be logged in");
+        $router -> show_error_page("Must be logged in", "401 Unauthorized");
         return;
     }
 
-    $editing = explode(",", $_POST["editing"]);
+    $response = [];
+
+    $editing = comma_split_to_array($_POST["editing"]);
     foreach (load_kids($config["database"]["kids"]) as $kid){
         if ($kid -> modification_time < $_POST["since"] || in_array($kid -> id, $editing)){
             continue;
         }
-        if ($_POST["first"] === "true"){
-            $code ="$(\"#kid_table_body > tr\").last().after(\"" . $kid -> to_table_row(false, get_self()) . "\")\n";
-        }
-        else{
-            $code = "$(\"#kid_table_body > tr#" . $kid -> id . "\").replaceWith(\"" . $kid -> to_table_row(false, get_self()) . "\")\n";
-        }
-        if (array_key_exists("hidden", $_POST)){
-            if (get_self() -> has_atleast_access("mod")){
-                if ($kid -> is_hidden()){
-                    echo $code;
-                    continue;
-                }
+        $kid_resp = [
+            "id" => $kid -> id,
+            "html" => $kid -> to_table_row(false, get_self())
+        ];
+        if (array_key_exists("hidden", $_POST) && get_self() -> has_access("mod")){
+            if (!($kid -> hidden)){
                 continue;
             }
-            continue;
+            $response[] = $kid_resp;
         }
-        if (!($kid -> is_hidden())){
-            echo $code;
+        if (!($kid -> hidden)){
+            $response[] = $kid_resp;
         }
     }
-}, ["since" => true, "first" => true, "editing" => true, "hidden" => false]);
+    echo json_encode($response);
+    return;
+}, ["since" => true, "append" => true, "editing" => true, "hidden" => false]);
 
 /**
  * Get HTML table row of kid with the provided ID.
@@ -349,24 +358,30 @@ $router -> post("/api/kid/list", function(){
  *
  * @return string - HTML table row.
  */
-$router -> post("/api/kid/get", function(){
+$router -> post("/api/kid/get", function($router){
     global $config;
-    if (!logged_in()){
+    if (!is_logged_in()){
         header("HTTP/1.0 401 Unauthorized");
-        error_page("Must be logged in");
+        $router -> show_error_page("Must be logged in", "401 Unauthorized");
         return;
     }
     $kid = get_kid($_POST["id"], $config["database"]["kids"]);
-    if ($kid -> is_hidden()){
+    if ($kid -> hidden){
         if (get_self() -> has_access("mod")){
-            echo $kid -> to_table_row($_POST["edit"] === "true", get_self());
+            echo json_encode([
+                "success" => true,
+                "html" => $kid -> to_table_row($_POST["edit"], get_self())
+            ]);
             return;
         }
         header("HTTP/1.0 401 Unauthorized");
-        error_page("Only accounts with an access level of 'mod' can view hidden kids.");
+        $router -> show_error_page("Only accounts with an access level of 'mod' can view hidden kids.", "401 Unauthorized");
         return;
     }
-    echo $kid -> to_table_row($_POST["edit"] === "true", get_self());
+    echo json_encode([
+        "success" => true,
+        "html" => $kid -> to_table_row($_POST["edit"], get_self())
+    ]);
 }, ["id" => true, "edit" => true]);
 
 /**
@@ -376,13 +391,13 @@ $router -> post("/api/kid/get", function(){
  * @param  $_POST["parents"] - Parent(s) of new kid.
  * @param  $_POST["status"] - Status of new kid.
  *
- * @return string - Javascript code to be ran by the client.
+ * @return string - HTML code.
  */
-$router -> post("/api/kid/add", function(){
+$router -> post("/api/kid/add", function($router){
     global $config, $logger;
-    if (!logged_in()){
+    if (!is_logged_in()){
         header("HTTP/1.0 401 Unauthorized");
-        error_page("Must be logged in");
+        $router -> show_error_page("Must be logged in", "401 Unauthorized");
         return;
     }
 
@@ -390,40 +405,47 @@ $router -> post("/api/kid/add", function(){
 
     $new_kid = new Kid(generate_id($config["database"]["ids"]), $_POST["first_name"], $_POST["last_name"], $_POST["parents"], $_POST["status"]);
 
-    $logger -> log(new Creation_Event($_SERVER["REMOTE_ADDR"], get_self() -> get_username(), "kid", ["Full Name" => $new_kid -> get_full_name(), "ID" => $new_kid -> id]));
+    $logger -> log(new Creation_Event($_SERVER["REMOTE_ADDR"], get_self() -> username, "kid", ["Full Name" => $new_kid -> get_full_name(), "ID" => $new_kid -> id]));
 
-    array_push($kids, $new_kid);
+    $kids[] = $new_kid;
     save_kids($kids, $config["database"]["kids"]);
-    echo "$(\"tr\").last().after(\"" . $new_kid -> to_table_row(false, get_self()) . "\")\n";
+    echo json_encode([
+        "success" => true,
+        "message" => "Kid successfully added!",
+        "html" => $new_kid -> to_table_row(false, get_self())
+    ]);
+    return;
 }, ["first_name" => true, "last_name" => true, "parents" => true, "status" => true]);
 
 /**
  * Delete a kid.
  * @param $_POST["id"] - ID of kid to delete.
- *
- * @return string - HTML code for table row.
  */
-$router -> post("/api/kid/delete", function(){
+$router -> post("/api/kid/delete", function($router){
     global $config, $logger;
-    if (!logged_in()){
+    if (!is_logged_in()){
         header("HTTP/1.0 401 Unauthorized");
-        error_page("Must be logged in");
+        $router -> show_error_page("Must be logged in", "401 Unauthorized");
         return;
     }
 
     if (!(get_self() -> has_access("admin"))){
-        header("HTTP/1.0 401 Unauthorized");
-        error_page("Only accounts with an access level of 'admin' can delete accounts.");
+        header("HTTP/1.0 403 Forbidden");
+        $router -> show_error_page("Only accounts with an access level of 'admin' can delete accounts.", "403 Forbidden");
         return;
     }
     $kid = get_kid($_POST["id"], $config["database"]["kids"]);
 
-    $logger -> log(new Deletion_Event($_SERVER["REMOTE_ADDR"], get_self() -> get_username(), "kid", ["Full Name" => $kid -> get_full_name(), "ID" => $kid -> id]));
+    $logger -> log(new Deletion_Event($_SERVER["REMOTE_ADDR"], get_self() -> username, "kid", ["Full Name" => $kid -> get_full_name(), "ID" => $kid -> id]));
 
     $kids = load_kids($config["database"]["kids"]);
     unset($kids[array_search($kid, $kids)]);
     save_kids($kids, $config["database"]["kids"]);
-    echo "";
+    echo json_encode([
+        "success" => true,
+        "message" => "Kid '" . $kid -> get_full_name() . "' deleted."
+    ]);
+    return;
 }, ["id" => true]);
 
 /**
@@ -431,11 +453,11 @@ $router -> post("/api/kid/delete", function(){
  * @param  $_POST["id"] - ID of kid status being changed.
  * @param  $_POST["status"] - New status of kid.
  */
-$router -> post("/api/kid/change_status", function(){
+$router -> post("/api/kid/change_status", function($router){
     global $config, $logger;
-    if (!logged_in()){
+    if (!is_logged_in()){
         header("HTTP/1.0 401 Unauthorized");
-        error_page("Must be logged in");
+        $router -> show_error_page("Must be logged in", "401 Unauthorized");
         return;
     }
 
@@ -447,9 +469,14 @@ $router -> post("/api/kid/change_status", function(){
         }
         $old_status = $kids[$key] -> status;
         $kids[$key] -> update_value("status", $_POST["status"]);
-        $logger -> log(new Kid_Status_Change_Event($_SERVER["REMOTE_ADDR"], get_self() -> get_username(), ["Full Name" => $kids[$key] -> get_full_name(), "ID" => $kids[$key] -> id], $old_status, $_POST["status"]));
+        $logger -> log(new Kid_Status_Change_Event($_SERVER["REMOTE_ADDR"], get_self() -> username, ["Full Name" => $kids[$key] -> get_full_name(), "ID" => $kids[$key] -> id], ucfirst($old_status), ucfirst($_POST["status"])));
+        break;
     }
     save_kids($kids, $config["database"]["kids"]);
+    echo json_encode([
+        "message" => "Status of '" . $kids[$key] -> get_full_name() . "' changed from '" . ucfirst($old_status) . "' to '" . ucfirst($kids[$key] -> status) . "'"
+    ]);
+    return;
 }, ["id" => true, "status" => true]);
 
 /**
@@ -463,17 +490,17 @@ $router -> post("/api/kid/change_status", function(){
  *
  * @return string - HTML code for table row.
  */
-$router -> post("/api/kid/edit", function(){
+$router -> post("/api/kid/edit", function($router){
     global $config, $logger;
-    if (!logged_in()){
+    if (!is_logged_in()){
         header("HTTP/1.0 401 Unauthorized");
-        error_page("Must be logged in");
+        $router -> show_error_page("Must be logged in", "401 Unauthorized");
         return;
     }
     $changed_fields = [];
 
     $kids = load_kids($config["database"]["kids"]);
-    foreach ($kids as $kid_key => $kid){
+    foreach ($kids as $kid_key => $_){
         if ($kids[$kid_key] -> id != $_POST["id"]){
             continue;
         }
@@ -482,31 +509,33 @@ $router -> post("/api/kid/edit", function(){
                 continue;
             }
             if ($data_key === "hidden"){
-                if (get_self() -> has_atleast_access("mod")){
+                if (get_self() -> has_access("mod")){
                     if ($kids[$kid_key] -> update_value($data_key, $value)){
-                        array_push($changed_fields, $data_key);
+                        $changed_fields[] = ucfirst($data_key);
                     }
                 }
                 else{
-                    header("HTTP/1.0 401 Unauthorized");
+                    header("HTTP/1.0 403 Forbidden");
+                    $router -> show_error_page("Only accounts with access level of 'mod' can change child hidden status", "403 Forbidden");
                 }
             }
             else{
                 if ($kids[$kid_key] -> update_value($data_key, $value)){
-                    array_push($changed_fields, $data_key);
+                    $changed_fields[] = ucfirst($data_key);
                 }
             }
         }
-        error_log(print_r($changed_fields, true));
-        $logger -> log(new Edit_Event($_SERVER["REMOTE_ADDR"], get_self() -> get_username(), "kid", ["Full Name" => $kids[$kid_key] -> get_full_name(), "ID" => $kids[$kid_key] -> id], $changed_fields));
+        $logger -> log(new Edit_Event($_SERVER["REMOTE_ADDR"], get_self() -> username, "kid", ["Full Name" => $kids[$kid_key] -> get_full_name(), "ID" => $kids[$kid_key] -> id], $changed_fields));
+        break;
     }
 
     save_kids($kids, $config["database"]["kids"]);
-    if (array_key_exists("hidden", $_POST)){
-        echo "";
-        return;
-    }
-    echo get_kid($_POST["id"], $config["database"]["kids"]) -> to_table_row(false, get_self());
+    echo json_encode([
+        "success" => true,
+        "message" => "Kid '" . $kids[$kid_key] -> get_full_name() . "' edited.",
+        "html" => get_kid($_POST["id"], $config["database"]["kids"]) -> to_table_row(false, get_self())
+    ]);
+    return;
 }, ["id" => true, "first_name" => false, "last_name" => false, "parents" => false, "full_name" => false, "hidden" => false]);
 
 /**
@@ -515,13 +544,15 @@ $router -> post("/api/kid/edit", function(){
  *
  * @return string - Javascript code to be evaluated by the client.
  */
-$router -> post("/api/history/list", function(){
+$router -> post("/api/history/list", function($router){
     global $config, $logger;
-    if (!logged_in()){
+    if (!is_logged_in()){
         header("HTTP/1.0 401 Unauthorized");
-        error_page("Must be logged in");
+        $router -> show_error_page("Must be logged in", "401 Unauthorized");
         return;
     }
+
+    $response = [];
 
     $history = $logger -> get_all_history();
 
@@ -530,14 +561,12 @@ $router -> post("/api/history/list", function(){
     }
     usort($history, "compare_time");
     foreach ($history as $event){
-        if ($_POST["first"] === "true"){
-            $code ="$(\"#history_table_body > tr\").last().after(\"" . $event -> to_table_row() . "\")\n";
-        }
-        else{
-            $code = "$(\"#history_table_body > tr#" . $event -> id . "\").replaceWith(\"" . $event -> to_table_row() . "\")\n";
-        }
-        echo $code;
+        $response[] = [
+            "html" => $event -> to_table_row()
+        ];
     }
+    echo json_encode($response);
+    return;
 }, ["since" => true]);
 
 /**
@@ -545,16 +574,12 @@ $router -> post("/api/history/list", function(){
  *
  * @return string - UTC/Epoch account modification time.
  */
-$router -> get("/api/history/poll", function(){
+$router -> get("/api/history/poll", function($router){
     global $logger;
-    if (!logged_in()){
+    if (!is_logged_in()){
         header("HTTP/1.0 401 Unauthorized");
-        error_page("Must be logged in");
+        $router -> show_error_page("Must be logged in", "401 Unauthorized");
         return;
-    }
-
-    if (!file_exists($logger -> current_filepath)){
-        file_put_contents($logger -> current_filepath, serialize([]));
     }
     echo filemtime($logger -> current_filepath);
     return;
@@ -562,6 +587,6 @@ $router -> get("/api/history/poll", function(){
 
 session_start();
 
-$router -> match($_SERVER, $_POST);
+$router -> match();
 
 ?>

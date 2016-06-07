@@ -2,13 +2,13 @@
 
 class Account{
     public $id;
+
     public $display_name;
-    private $username;
+    public $username;
     private $password;
     private $salt;
 
-    private $access_level;
-
+    public $access_level;
     public $preferences;
 
     public $account_creation_time;
@@ -81,10 +81,6 @@ class Account{
         $this -> account_creation_time = time();
     }
 
-    public function get_username(){
-        return $this -> username;
-    }
-
     public function username_match($username){
         return ($this -> username === strtolower($username));
     }
@@ -93,11 +89,11 @@ class Account{
         return ($this -> password === hash("sha256", $this -> salt . $password));
     }
 
-    public function has_access($access){
+    public function access_level_is($access){
         return ($this -> access_level === $access);
     }
 
-    public function has_atleast_access($access){
+    public function has_access($access){
         switch ($access) {
             case "admin":
                 return ($this -> access_level === $access);
