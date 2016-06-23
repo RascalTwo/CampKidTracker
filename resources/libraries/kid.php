@@ -4,8 +4,9 @@ class Kid{
     public $id;
     public $first_name;
     public $last_name;
-    public $parents;
     public $status;
+    public $parents;
+    public $group;
     public $modification_time;
     public $status_update_time;
     public $hidden;
@@ -14,8 +15,9 @@ class Kid{
         $this -> id = $id;
         $this -> first_name = $first_name;
         $this -> last_name = $last_name;
-        $this -> parents = $this -> parse_comma_split($parents);
         $this -> status = $status;
+        $this -> parents = $this -> parse_comma_split($parents);
+        $this -> group;
         $this -> modification_time = time();
         $this -> status_update_time = time();
         $this -> hidden = false;
@@ -51,6 +53,14 @@ class Kid{
             case "parents":
                 if ($this -> parents !== $this -> parse_comma_split($value)){
                     $this -> parents = $this -> parse_comma_split($value);
+                    break;
+                }
+                $changed = false;
+                break;
+
+            case "group":
+                if ($this -> group !== $value){
+                    $this -> group = $value;
                     break;
                 }
                 $changed = false;
@@ -100,12 +110,12 @@ class Kid{
         return $changed;
     }
 
-    public function get_cell($name, $edit, $account){
+    public function get_cell($name, $edit, $account, $groups){
         $response = "<td>";
         switch ($name) {
             case "first_name":
                 if ($edit){
-                    $response .= "<input size='10' type='text' id='" . $this -> id . "-first_name' value='" . $this -> first_name . "'>";
+                    $response .= "<input size='10' type='text' id='" . $this -> id . "-kid_first_name' value='" . $this -> first_name . "'>";
                     continue;
                 }
                 $response .= $this -> first_name;
@@ -113,7 +123,7 @@ class Kid{
 
             case "last_name":
                 if ($edit){
-                    $response .= "<input size='10' type='text' id='" . $this -> id . "-last_name' value='" . $this -> last_name . "'>";
+                    $response .= "<input size='10' type='text' id='" . $this -> id . "-kid_last_name' value='" . $this -> last_name . "'>";
                     continue;
                 }
                 $response .= $this -> last_name;
@@ -121,7 +131,7 @@ class Kid{
 
             case "full_name":
                 if ($edit){
-                    $response .= "<input size='15' type='text' id='" . $this -> id . "-full_name' value='" . $this -> get_full_name() . "'>";
+                    $response .= "<input size='15' type='text' id='" . $this -> id . "-kid_full_name' value='" . $this -> get_full_name() . "'>";
                     continue;
                 }
                 $response .= $this -> get_full_name();
@@ -129,7 +139,7 @@ class Kid{
 
             case "parents":
                 if ($edit){
-                    $response .= "<input size='15' type='text' id='" . $this -> id . "-parents' value='" . implode(",", $this -> parents) . "'>";
+                    $response .= "<input size='15' type='text' id='" . $this -> id . "-kid_parents' value='" . implode(",", $this -> parents) . "'>";
                     continue;
                 }
                 $response .= implode("<br>", $this -> parents);
@@ -151,25 +161,25 @@ class Kid{
                 $response .= "<input " . $name . " type='radio' id='" . $this -> id . "-parentarrived-kid_status' value='parentarrived' " . (($this -> status === "parentarrived") ? "checked" : "") . "><br>";
                 break;
 
-            case "options":
+            case "actions":
                 if ($account -> access_level_is("user")){
                     continue;
                 }
                 elseif ($account -> has_access("admin")){
-                    $response .= "<input id='" . $this -> id . "-delete' type='button' value='Delete'>";
+                    $response .= "<input id='" . $this -> id . "-kid_delete' type='button' value='Delete'>";
                     $response .= "<br>";
                     if ($this -> hidden){
-                        $response .= "<input id='" . $this -> id . "-unhide' type='button' value='Un-Hide'>";
+                        $response .= "<input id='" . $this -> id . "-kid_unhide' type='button' value='Un-Hide'>";
                     }
                     else{
-                        $response .= "<input id='" . $this -> id . "-hide' type='button' value='Hide'>";
+                        $response .= "<input id='" . $this -> id . "-kid_hide' type='button' value='Hide'>";
                     }
                 }
                 if ($edit){
-                    $response .= "<input id='" . $this -> id . "-confirm_edit' type='button' value='Confirm Edit'>";
+                    $response .= "<input id='" . $this -> id . "-kid_confirm_edit' type='button' value='Confirm Edit'>";
                     continue;
                 }
-                $response .= "<input id='" . $this -> id . "-edit' type='button' value='Edit'>";
+                $response .= "<input id='" . $this -> id . "-kid_edit' type='button' value='Edit'>";
                 break;
 
             case "id":
@@ -183,15 +193,37 @@ class Kid{
                 $response .= "Status Updated: " . date("m-d-y g:i A", $this -> status_update_time) . "<br>";
                 $response .= "<span class='change_time' time='" . $this -> status_update_time . "'></span>";
                 break;
+
+            case "group":
+                if ($edit){
+                    $response .= "<select id='" . $this -> id . "-kid_group'>";
+                    $response .= "<option value=''>None</option>";
+                    if ($this -> group !== NULL){
+                        $response .= "<option selected value='" . $this -> group . "'>" . $this -> group . "</option>";
+                    }
+                    foreach ($groups as $group){
+                        $response .= "<option value='" . $group -> name . "'>" . $group -> name . "</option>";
+                    }
+                    $response .= "</select>";
+                }
+                else{
+                    if ($this -> group !== NULL){
+                        $response .= $this -> group;
+                    }
+                    else{
+                        $response .= "None";
+                    }
+                }
+                break;
         }
         return $response . "</td>";
     }
 
-    public function to_table_row($edit, $account){
+    public function to_table_row($edit, $account, $groups){
         $response = "<tr id='" . $this -> id . "'>";
-        foreach ($account -> preferences["columns"] as $column){
+        foreach ($account -> columns as $name => $column){
             if ($column["enabled"]){
-                $response .= $this -> get_cell($column["name"], $edit, $account);
+                $response .= $this -> get_cell($name, $edit, $account, $groups);
             }
         }
         $response .= "</tr>";
@@ -211,7 +243,12 @@ function save_kids($kids, $path){
 }
 
 function get_kid($id, $path){
-    $kids = load_kids($path);
+    if (is_array($path)){
+        $kids = $path;
+    }
+    else{
+        $kids = load_kids($path);
+    }
     foreach ($kids as $kid){
         if ($kid -> id == $id){
             return $kid;

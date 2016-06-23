@@ -2,6 +2,7 @@
 require_once __DIR__ . "/resources/config.php";
 require_once $config["class"]["router"];
 require_once $config["class"]["account"];
+require_once $config["class"]["group"];
 require_once $config["class"]["kid"];
 require_once $config["class"]["logging"];
 require_once $config["class"]["utility"];
@@ -59,13 +60,23 @@ $router -> get("/dashboard", function($router){
     return;
 });
 
+$router -> get("/groups", function($router){
+    if (!is_logged_in()){
+        unset($_SESSION["login"]);
+        $router -> redirect("/login");
+        return;
+    }
+    $router -> show_template("groups", "Groups");
+    return;
+});
+
 $router -> get("/preferences", function($router){
     if (!is_logged_in()){
         unset($_SESSION["login"]);
         $router -> redirect("/login");
         return;
     }
-    $router -> show_template("preferences", "Preferences");
+    $router -> show_template("preferences", "Preferences", ["utility"]);
     return;
 });
 
@@ -217,7 +228,7 @@ $router -> post("/api/account/delete", function($router){
         $router -> show_error_page("Only accounts with an access level of 'admin' can delete accounts.", "403 Forbidden");
         return;
     }
-    if (get_self() -> id === $_POST["id"]){
+    if (get_self() -> id == $_POST["id"]){
         header("HTTP/1.0 400 Bad Request");
         $router -> show_error_page("You can not delete your own account.", "400 Bad Request");
         return;
@@ -276,21 +287,32 @@ $router -> post("/api/account/edit", function($router){
         return;
     }
 
+    $changed_fields = [];
+
     $accounts = load_accounts($config["database"]["accounts"]);
     foreach ($accounts as $key => $_){
         if ($accounts[$key] -> id !== get_self() -> id){
             continue;
         }
-        $accounts[$key] -> update_preferences($_POST["columns"], $_POST["theme"]);
+        foreach ($_POST as $data_key => $value){
+            if ($accounts[$key] -> update_preference($data_key, $value)){
+                $changed_fields[] = $data_key;
+            }
+        }
         $_SESSION["login"]["account"] = $accounts[$key];
+        break;
     }
 
-    $logger -> log(new Edit_Event($_SERVER["REMOTE_ADDR"], get_self() -> username, "account", ["Display Name" => get_self() -> display_name, "Username" => get_self() -> username, "ID" => get_self() -> id], ["Columns", "Theme"]));
+    $logger -> log(new Edit_Event($_SERVER["REMOTE_ADDR"], get_self() -> username, "account", ["Display Name" => get_self() -> display_name, "Username" => get_self() -> username, "ID" => get_self() -> id], $changed_fields));
 
     save_accounts($accounts, $config["database"]["accounts"]);
-    echo $_SESSION["login"]["account"] -> table_header(true);
+    echo json_encode([
+        "success" => true,
+        "message" => count($changed_fields) > 0 ? "Preferences updated." : "No preferences updated.",
+        "html" => $_SESSION["login"]["account"] -> table_header(true)
+    ]);
     return;
-}, ["columns" => true, "theme" => true]);
+}, ["columns" => false, "theme" => false, "emails" => false, "phones" => false]);
 
 /**
  * Return the last modified time of all accounts.
@@ -335,7 +357,7 @@ $router -> post("/api/kid/list", function($router){
         }
         $kid_resp = [
             "id" => $kid -> id,
-            "html" => $kid -> to_table_row(false, get_self())
+            "html" => $kid -> to_table_row(false, get_self(), [])
         ];
         if (array_key_exists("hidden", $_POST) && get_self() -> has_access("mod")){
             if (!($kid -> hidden)){
@@ -365,12 +387,13 @@ $router -> post("/api/kid/get", function($router){
         $router -> show_error_page("Must be logged in", "401 Unauthorized");
         return;
     }
+    $groups = load_groups($config["database"]["groups"]);
     $kid = get_kid($_POST["id"], $config["database"]["kids"]);
     if ($kid -> hidden){
         if (get_self() -> has_access("mod")){
             echo json_encode([
                 "success" => true,
-                "html" => $kid -> to_table_row($_POST["edit"], get_self())
+                "html" => $kid -> to_table_row($_POST["edit"], get_self(), $groups)
             ]);
             return;
         }
@@ -380,7 +403,7 @@ $router -> post("/api/kid/get", function($router){
     }
     echo json_encode([
         "success" => true,
-        "html" => $kid -> to_table_row($_POST["edit"], get_self())
+        "html" => $kid -> to_table_row($_POST["edit"], get_self(), $groups)
     ]);
 }, ["id" => true, "edit" => true]);
 
@@ -470,6 +493,20 @@ $router -> post("/api/kid/change_status", function($router){
         $old_status = $kids[$key] -> status;
         $kids[$key] -> update_value("status", $_POST["status"]);
         $logger -> log(new Kid_Status_Change_Event($_SERVER["REMOTE_ADDR"], get_self() -> username, ["Full Name" => $kids[$key] -> get_full_name(), "ID" => $kids[$key] -> id], ucfirst($old_status), ucfirst($_POST["status"])));
+        if (count($kids[$key] -> groups) === 0){
+            break;
+        }
+        foreach (load_groups($config["database"]["groups"]) as $group){
+            if (!(array_key_exists($group -> id, $kids[$key] -> groups))){
+                continue;
+            }
+            foreach (load_accounts($config["database"]["accounts"]) as $account){
+                if ($account -> id === get_self() -> id or (!(array_key_exists($account -> id, $group -> leaders)))){
+                    continue;
+                }
+                $account -> contact($kid_id);
+            }
+        }
         break;
     }
     save_kids($kids, $config["database"]["kids"]);
@@ -533,10 +570,121 @@ $router -> post("/api/kid/edit", function($router){
     echo json_encode([
         "success" => true,
         "message" => "Kid '" . $kids[$kid_key] -> get_full_name() . "' edited.",
-        "html" => get_kid($_POST["id"], $config["database"]["kids"]) -> to_table_row(false, get_self())
+        "html" => get_kid($_POST["id"], $config["database"]["kids"]) -> to_table_row(false, get_self(), [])
     ]);
     return;
 }, ["id" => true, "first_name" => false, "last_name" => false, "parents" => false, "full_name" => false, "hidden" => false]);
+
+$router -> post("/api/group/create", function($router){
+    global $config, $logger;
+    if (!is_logged_in()){
+        header("HTTP/1.0 401 Unauthorized");
+        $router -> show_error_page("Must be logged in.", "401 Unauthorized");
+        return;
+    }
+    if (!get_self() -> has_access("mod")){
+        header("HTTP/1.0 403 Forbidden");
+        $router -> show_error_page("Only accounts with an access level of 'mod' can create groups.", "403 Forbidden");
+        return;
+    }
+
+    $new_group = new Group(generate_id($config["database"]["ids"]), $_POST["name"]);
+
+    $groups = load_groups($config["database"]["groups"]);
+    foreach ($groups as $key => $_){
+        if ($groups[$key] -> name !== $new_group -> name){
+            continue;
+        }
+        $logger -> log(new Custom_Event($_SERVER["REMOTE_ADDR"], get_self() -> username, "Failed to create group", "Group named '" . $new_group -> name . "' already exists"));
+        echo json_encode([
+            "success" => false,
+            "message" => "Group name '" . $_POST["name"] . "' already exists!"
+        ]);
+        return;
+    }
+
+    $logger -> log(new Creation_Event($_SERVER["REMOTE_ADDR"], get_self() -> username, "group", ["Name" => $new_group -> name]));
+
+    $groups[] = $new_group;
+    save_groups($groups, $config["database"]["groups"]);
+    echo json_encode([
+        "success" => false,
+        "message" => "Group Successfully Created!"
+    ]);
+    return;
+}, ["name" => true]);
+
+
+$router -> post("/api/group/delete", function($router){
+    global $config, $logger;
+    if (!is_logged_in()){
+        header("HTTP/1.0 401 Unauthorized");
+        $router -> show_error_page("Must be logged in", "401 Unauthorized");
+        return;
+    }
+
+    if (!(get_self() -> has_access("mod"))){
+        header("HTTP/1.0 403 Forbidden");
+        $router -> show_error_page("Only accounts with an access level of 'mod' can delete groups.", "403 Forbidden");
+        return;
+    }
+    $group = get_group($_POST["id"], $config["database"]["groups"]);
+
+    $logger -> log(new Deletion_Event($_SERVER["REMOTE_ADDR"], get_self() -> username, "group", ["Name" => $group -> name, "ID" => $group -> id]));
+
+    $groups = load_groups($config["database"]["groups"]);
+    unset($groups[array_search($group, $groups)]);
+    save_groups($groups, $config["database"]["groups"]);
+    echo json_encode([
+        "success" => true,
+        "message" => "Group '" . $group -> name . "' deleted."
+    ]);
+    return;
+}, ["id" => true]);
+
+
+$router -> post("/api/group/get", function($router){
+    global $config;
+    if (!is_logged_in()){
+        header("HTTP/1.0 401 Unauthorized");
+        $router -> show_error_page("Must be logged in", "401 Unauthorized");
+        return;
+    }
+
+    $response = [
+        "success" => true,
+        "kids" => [],
+        "accounts" => []
+    ];
+
+    $kids = load_kids($config["database"]["kids"]);
+    $accounts = load_accounts($config["database"]["accounts"]);
+
+    $group = get_group($_POST["id"], $config["database"]["groups"]);
+    foreach ($group -> kids as $kid_id){
+        $response["kids"][] = get_kid($kids) -> to_table_row(false, get_self());
+    }
+    foreach ($group -> leaders as $account_id){
+        $response["accounts"][] = get_account($accounts) -> to_table_row();
+    }
+    echo json_encode($response);
+    return;
+}, ["id" => true]);
+
+$router -> get("/api/group/list", function($router){
+    global $config;
+    if (!is_logged_in()){
+        header("HTTP/1.0 401 Unauthorized");
+        $router -> show_error_page("Must be logged in", "401 Unauthorized");
+        return;
+    }
+    $response = [];
+    foreach (load_groups($config["database"]["groups"]) as $group){
+        $response[] = $group -> to_table_row();
+    }
+    echo json_encode($response);
+    return;
+});
 
 /**
  * Get Javascript code to create table row for all kids modified after provided UTC/Epoch time.

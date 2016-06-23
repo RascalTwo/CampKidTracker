@@ -1,7 +1,6 @@
 <span id="content">
-    <br>
     Username: <input class="lowercase_input" type="text" id="username_input"><br>
-    Password: <input type="text" id="password_input"><br>
+    Password: <input type="password" id="password_input"><br>
     <input type="button" id="login_button" value="Login">
 </span>
 <script type="text/javascript">
@@ -10,8 +9,7 @@
         var password = $("#password_input").val();
         $.post("api/account/login", {username: username, password: password}, function(response){
             response = JSON.parse(response);
-            //message(response.message);
-            console.log(response.message);
+            message(response.message);
             if (response.success){
                 window.location.href = response.redirect;
             }

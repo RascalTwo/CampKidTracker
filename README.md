@@ -1,16 +1,17 @@
 # TODO
 
+- Add group functoinalilty.
+- Add note functionality.
 - Add account login extensions.
 - Add javascript catch if response is not returned in place of response.success
-- Add Message bar below nav and above content.
-- Add theme selection.
 - Replace hide/unhide buttons with checkboxes
 - Implement caching.
 - Remove dupe comma split to array function in Kid class.
 - Make history navigatable by day.
 - Break out of loops when found target.
 - Improve updateClocks() efficency.
-- Have all APIs response with JSON.
+- Pass all relevent data to the client and have them organize it into tables and such.
+- Have all API endpoints respond with JSON.
 - Create `full` and `minimal` CSS themes.
 - Verify client -> server data validation.
 - Clear forms on submission.
@@ -21,3 +22,6 @@
 - Add code documentation.
 - Optimize code in '/api/kid/get'.
 - Improve documentation consistency.
+
+
+    var self = <?php echo get_self() -> json(); ?>

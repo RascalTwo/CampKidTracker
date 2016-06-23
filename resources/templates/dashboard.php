@@ -58,8 +58,7 @@
         var parents = $("#new_parents").val();
         $.post("api/kid/add", {first_name: first_name, last_name: last_name, status: status, parents: parents}, function(response){
             response = JSON.parse(response);
-            //message(response.message);
-            console.log(response.message);
+            message(response.message);
             if (response.success){
                 $("#kid_table_body > tr").last().after(response.html);
             }

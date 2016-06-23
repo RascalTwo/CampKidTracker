@@ -2,10 +2,20 @@
     <br>
     <span id="preferences">
         <table>
-            <tbody>
-                <?php echo $_SESSION["login"]["account"] -> table_header(true); ?>
+            <tbody id="columns">
+                <?php echo get_self() -> table_header(true); ?>
             </tbody>
         </table>
+        <br>
+        <label for="theme_value">Full Theme</label>
+        <input type="checkbox" id="theme_value" <?php echo get_self() -> theme === "full" ? "checked" : ""; ?>>
+        <br>
+        <label for="email_contacts">Email Address(es)</label>
+        <input type="text" id="email_addresses" value="<?php echo implode(', ', get_self() -> contact['emails']); ?>">
+        <br>
+        <label for="phone_contacts">Phone Number(s)</label>
+        <input type="text" id="phone_numbers" value="<?php echo implode(', ', get_self() -> contact['phones']); ?>">
+        <br>
         <input id="save_button" type="button" value="Save">
     </span>
 </span>
@@ -36,8 +46,15 @@
             }
         }
 
-        $.post("api/account/edit", {columns: columns, theme: "full"}, function(response){
-            eval(response);
+        var theme = $("#theme_value")[0].checked ? "full" : "minimal";
+        var emails = comma_array_clean($("#email_addresses").val());
+        var phones = comma_array_clean($("#phone_numbers").val());
+        $.post("api/account/edit", {columns: columns, theme: theme, emails: emails, phones: phones}, function(response){
+            response = JSON.parse(response);
+            message(response.message);
+            if (response.success){
+                $("#columns").html(response.html);
+            }
         });
     });
 </script>

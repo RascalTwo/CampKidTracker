@@ -11,6 +11,7 @@ $config = [
     "class" => [
         "router" => $RESOURCES . "libraries/router.php",
         "account" => $RESOURCES . "libraries/account.php",
+        "group" => $RESOURCES . "libraries/group.php",
         "kid" => $RESOURCES . "libraries/kid.php",
         "logging" => $RESOURCES . "libraries/logging.php",
         "utility" => $RESOURCES . "libraries/utility.php"

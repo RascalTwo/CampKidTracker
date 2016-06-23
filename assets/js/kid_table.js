@@ -24,7 +24,7 @@ function updateClocks(){
     });
 }
 
-$(document).on("click", "input[id$='-delete']", function(event){
+$(document).on("click", "input[id$='-kid_delete']", function(event){
     var id = event.target.id.split("-")[0];
     $.post("api/kid/delete", {id: id}, function(response){
         response = JSON.parse(response);
@@ -36,7 +36,7 @@ $(document).on("click", "input[id$='-delete']", function(event){
     });
 });
 
-$(document).on("click", "input[id$='-hide']", function(event){
+$(document).on("click", "input[id$='-kid_hide']", function(event){
     var id = event.target.id.split("-")[0];
     $.post("api/kid/edit", {id: id, hidden: true}, function(response){
         response = JSON.parse(response);
@@ -48,7 +48,7 @@ $(document).on("click", "input[id$='-hide']", function(event){
     });
 });
 
-$(document).on("click", "input[id$='-unhide']", function(event){
+$(document).on("click", "input[id$='-kid_unhide']", function(event){
     var id = event.target.id.split("-")[0];
     $.post("api/kid/edit", {id: id, hidden: false}, function(response){
         response = JSON.parse(response);
@@ -60,7 +60,7 @@ $(document).on("click", "input[id$='-unhide']", function(event){
     });
 });
 
-$(document).on("click", "input[id$='-edit']", function(event){
+$(document).on("click", "input[id$='-kid_edit']", function(event){
     var id = $(event.target)[0].id.split("-")[0]
     editing.push(id);
     $.post("api/kid/get", {id: id, edit: true}, function(response){
@@ -71,7 +71,7 @@ $(document).on("click", "input[id$='-edit']", function(event){
     });
 });
 
-$(document).on("click", "input[id$='-confirm_edit']", function(event){
+$(document).on("click", "input[id$='-kid_confirm_edit']", function(event){
     var id = $(event.target)[0].id.split("-")[0]
     var index = editing.indexOf(id);
     if (index !== -1){
