@@ -202,13 +202,19 @@ class Kid{
                         $response .= "<option selected value='" . $this -> group . "'>" . $this -> group . "</option>";
                     }
                     foreach ($groups as $group){
-                        $response .= "<option value='" . $group -> name . "'>" . $group -> name . "</option>";
+                        $response .= "<option value='" . $group -> id . "'>" . $group -> name . "</option>";
                     }
                     $response .= "</select>";
                 }
                 else{
                     if ($this -> group !== NULL){
-                        $response .= $this -> group;
+                        foreach ($groups as $group){
+                            if ($this -> group != $group -> id){
+                                continue;
+                            }
+                            $response .= $group -> name;
+                            break;
+                        }
                     }
                     else{
                         $response .= "None";

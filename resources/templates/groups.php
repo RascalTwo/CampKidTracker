@@ -83,11 +83,35 @@
         });
     });
 
+    $(document).on("click", "input[id$='-group_edit']", function(event){
+        var id = $(event.target)[0].id.split("-")[0]
+        $.post("api/group/get", {id: id, edit: true}, function(response){
+            response = JSON.parse(response);
+            if (response.success){
+                $("tr#" + id + "-group").replaceWith(response.html);
+            }
+        });
+    });
+
+    $(document).on("click", "input[id$='-group_confirm_edit']", function(event){
+        var id = $(event.target)[0].id.split("-")[0]
+        var post_data = {
+            id: id,
+            name: $("#" + id + "-group_name").val()
+        };
+        $.post("api/group/edit", post_data, function(response){
+            response = JSON.parse(response);
+            message(response.message);
+            if (response.success){
+                $("tr#" + id + "-group").replaceWith(response.html);
+            }
+        });
+    });
+
     $("#new_group").click(function(){
         var name = $("#new_group_name").val();
         $.post("api/group/create", {name: name}, function(response){
             response = JSON.parse(response);
-            console.log(response);
             message(response.message);
             getGroups();
         });

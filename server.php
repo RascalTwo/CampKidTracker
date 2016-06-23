@@ -349,7 +349,7 @@ $router -> post("/api/kid/list", function($router){
     }
 
     $response = [];
-
+    $groups = load_groups($config["database"]["groups"]);
     $editing = comma_split_to_array($_POST["editing"]);
     foreach (load_kids($config["database"]["kids"]) as $kid){
         if ($kid -> modification_time < $_POST["since"] || in_array($kid -> id, $editing)){
@@ -357,7 +357,7 @@ $router -> post("/api/kid/list", function($router){
         }
         $kid_resp = [
             "id" => $kid -> id,
-            "html" => $kid -> to_table_row(false, get_self(), [])
+            "html" => $kid -> to_table_row(false, get_self(), $groups)
         ];
         if (array_key_exists("hidden", $_POST) && get_self() -> has_access("mod")){
             if (!($kid -> hidden)){
@@ -542,24 +542,33 @@ $router -> post("/api/kid/edit", function($router){
             continue;
         }
         foreach ($_POST as $data_key => $value){
-            if ($data_key === "id"){
-                continue;
-            }
-            if ($data_key === "hidden"){
-                if (get_self() -> has_access("mod")){
+            switch ($data_key){
+                case "id":
+                    break;
+
+                case "hidden":
+                    if (get_self() -> has_access("mod")){
+                        if ($kids[$kid_key] -> update_value($data_key, $value)){
+                            $changed_fields[] = ucfirst($data_key);
+                        }
+                    }
+                    else{
+                        header("HTTP/1.0 403 Forbidden");
+                        $router -> show_error_page("Only accounts with access level of 'mod' can change child hidden status", "403 Forbidden");
+                    }
+                    break;
+
+                case "group":
+                    if ($kids[$kid_key] -> update_value($data_key, $value)){
+
+                    }
+                    break;
+
+                default:
                     if ($kids[$kid_key] -> update_value($data_key, $value)){
                         $changed_fields[] = ucfirst($data_key);
                     }
-                }
-                else{
-                    header("HTTP/1.0 403 Forbidden");
-                    $router -> show_error_page("Only accounts with access level of 'mod' can change child hidden status", "403 Forbidden");
-                }
-            }
-            else{
-                if ($kids[$kid_key] -> update_value($data_key, $value)){
-                    $changed_fields[] = ucfirst($data_key);
-                }
+                    break;
             }
         }
         $logger -> log(new Edit_Event($_SERVER["REMOTE_ADDR"], get_self() -> username, "kid", ["Full Name" => $kids[$kid_key] -> get_full_name(), "ID" => $kids[$kid_key] -> id], $changed_fields));
@@ -651,8 +660,11 @@ $router -> post("/api/group/get", function($router){
         return;
     }
 
+    $group = get_group($_POST["id"], $config["database"]["groups"]);
+
     $response = [
         "success" => true,
+        "html" => $group -> to_table_row($_POST["edit"]),
         "kids" => [],
         "accounts" => []
     ];
@@ -660,16 +672,15 @@ $router -> post("/api/group/get", function($router){
     $kids = load_kids($config["database"]["kids"]);
     $accounts = load_accounts($config["database"]["accounts"]);
 
-    $group = get_group($_POST["id"], $config["database"]["groups"]);
     foreach ($group -> kids as $kid_id){
-        $response["kids"][] = get_kid($kids) -> to_table_row(false, get_self());
+        $response["kids"][] = get_kid($kids) -> to_table_row(false, get_self(), []);
     }
     foreach ($group -> leaders as $account_id){
         $response["accounts"][] = get_account($accounts) -> to_table_row();
     }
     echo json_encode($response);
     return;
-}, ["id" => true]);
+}, ["id" => true, "edit" => true]);
 
 $router -> get("/api/group/list", function($router){
     global $config;
@@ -680,11 +691,54 @@ $router -> get("/api/group/list", function($router){
     }
     $response = [];
     foreach (load_groups($config["database"]["groups"]) as $group){
-        $response[] = $group -> to_table_row();
+        $response[] = $group -> to_table_row(false);
     }
     echo json_encode($response);
     return;
 });
+
+$router -> post("/api/group/edit", function($router){
+    global $config, $logger;
+    if (!is_logged_in()){
+        header("HTTP/1.0 401 Unauthorized");
+        $router -> show_error_page("Must be logged in", "401 Unauthorized");
+        return;
+    }
+
+    if (!(get_self() -> has_access("mod"))){
+        header("HTTP/1.0 403 Forbidden");
+        $router -> show_error_page("Only accounts with an access level of 'mod' can edit groups.", "403 Forbidden");
+        return;
+    }
+
+    $groups = load_groups($config["database"]["groups"]);
+
+    foreach ($groups as $group_key => $_){
+        if ($groups[$group_key] -> id != $_POST["id"]){
+            continue;
+        }
+        foreach ($_POST as $data_key => $value){
+            switch ($data_key){
+                case "id":
+                    break;
+
+                default:
+                    $groups[$group_key] -> update_value($data_key, $value);
+                    break;
+            }
+        }
+        $logger -> log(new Edit_Event($_SERVER["REMOTE_ADDR"], get_self() -> username, "group", ["Name" => $groups[$group_key] -> name, "ID" => $groups[$group_key] -> id]));
+        break;
+    }
+
+    save_groups($groups, $config["database"]["groups"]);
+    echo json_encode([
+        "success" => true,
+        "message" => "Group '" . $groups[$group_key] -> name . "' edited.",
+        "html" => get_group($_POST["id"], $config["database"]["groups"]) -> to_table_row(false)
+    ]);
+    return;
+}, ["id" => true, "name" => false, "kids" => false, "leaders" => false]);
 
 /**
  * Get Javascript code to create table row for all kids modified after provided UTC/Epoch time.

@@ -28,8 +28,7 @@ $(document).on("click", "input[id$='-kid_delete']", function(event){
     var id = event.target.id.split("-")[0];
     $.post("api/kid/delete", {id: id}, function(response){
         response = JSON.parse(response);
-        //message(response.message);
-        console.log(response.message);
+        message(response.message);
         if (response.success){
             $("tr#" + id).remove();
         }
@@ -40,8 +39,7 @@ $(document).on("click", "input[id$='-kid_hide']", function(event){
     var id = event.target.id.split("-")[0];
     $.post("api/kid/edit", {id: id, hidden: true}, function(response){
         response = JSON.parse(response);
-        //message(response.message);
-        console.log(response.message);
+        message(response.message);
         if (response.success){
             $("tr#" + id).replaceWith(response.html);
         }
@@ -52,8 +50,7 @@ $(document).on("click", "input[id$='-kid_unhide']", function(event){
     var id = event.target.id.split("-")[0];
     $.post("api/kid/edit", {id: id, hidden: false}, function(response){
         response = JSON.parse(response);
-        //message(response.message);
-        console.log(response.message);
+        message(response.message);
         if (response.success){
             $("tr#" + id).replaceWith(response.html);
         }
@@ -84,10 +81,10 @@ $(document).on("click", "input[id$='-kid_confirm_edit']", function(event){
         }
         post_data[this.id.split("-")[1]] = this.value;
     });
+    post_data["group"] = $("#" + id + "-kid_group :selected").val();
     $.post("api/kid/edit", post_data, function(response){
         response = JSON.parse(response);
-        //message(response.message);
-        console.log(response.message);
+        message(response.message);
         if (response.success){
             $("tr#" + id).replaceWith(response.html);
         }
@@ -98,7 +95,6 @@ $(document).on("change", "input[type='radio'][name$='kid_status']", function(eve
     var element_info = event.target.id.split("-");
     $.post("api/kid/change_status", {id: element_info[0], status: element_info[1]}, function(response){
         response = JSON.parse(response);
-        //message(response.message);
-        console.log(response.message);
+        message(response.message);
     });
 })

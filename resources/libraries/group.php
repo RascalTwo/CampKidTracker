@@ -14,6 +14,47 @@ class Group{
         $this -> leaders = [];
     }
 
+    public function comma_split_to_array($string){
+        $array = [];
+        foreach (explode(",", $string) as $item){
+            if ($item == NULL || $item == ''){
+                continue;
+            }
+            $array[] = $item;
+        }
+        return $array;
+    }
+
+    public function update_value($name, $value){
+        $changed = true;
+        switch ($name){
+            case "kids":
+                if ($this -> kids !== $this -> comma_split_to_array($value)){
+                    $this -> kids = $this -> comma_split_to_array($value);
+                    break;
+                }
+                $changed = false;
+                break;
+
+            case "leaders":
+                if ($this -> leaders !== $this -> comma_split_to_array($value)){
+                    $this -> leaders = $this -> comma_split_to_array($value);
+                    break;
+                }
+                $changed = false;
+                break;
+
+            case "name":
+                if ($this -> name !== $value){
+                    $this -> name = $value;
+                    break;
+                }
+                $changed = false;
+                break;
+        }
+        return $changed;
+    }
+
     public function add_kid($id){
         $this -> kids[] = $id;
     }
@@ -34,9 +75,14 @@ class Group{
         }
     }
 
-    public function to_table_row(){
+    public function to_table_row($edit){
         $response = "<tr id='" . $this -> id . "-group'><td>";
-        $response .= $this -> name;
+        if ($edit){
+            $response .= "<input size='10' type='text' id='" . $this -> id . "-group_name' value='" . $this -> name . "'>";
+        }
+        else{
+            $response .= $this -> name;
+        }
         $response .= "</td><td>";
         $response .= count($this -> kids);
         $response .= "</td><td>";
@@ -44,7 +90,13 @@ class Group{
         if (get_self() -> has_access("mod")){
             $response .= "</td><td>";
             $response .= "<input id='" . $this -> id . "-group_delete' type='button' value='Delete'><br>";
-            $response .= "<input type='button' value='View/Modify' id='" . $this -> id . "-group_view'><br>";
+            $response .= "<input type='button' value='List Members' id='" . $this -> id . "-group_view'><br>";
+            if ($edit){
+                $response .= "<input type='button' value='Confirm Edit' id='" . $this -> id . "-group_confirm_edit' >";
+            }
+            else{
+                $response .= "<input type='button' value='Edit Name' id='" . $this -> id . "-group_edit'>";
+            }
         }
         $response .= "</td></tr>";
         return $response;
