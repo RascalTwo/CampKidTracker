@@ -30,6 +30,7 @@ class Router{
         }
 
         if (file_exists($this -> assets . substr($uri, 1))){
+            header("HTTP/1.0 200 OK");
             if (strpos($uri, ".css")){
                 header("Content-type: text/css");
             }
@@ -41,6 +42,7 @@ class Router{
         }
 
         $error_message = "Resource '" . $uri . "' not found.";
+        header("HTTP/1.0 200 OK");
         include $this -> templates . "error.php";
         return;
     }
@@ -90,11 +92,8 @@ class Router{
 
     public function show_template($template, $page_title, $js=NULL, $css=NULL){
         $template_path = $this -> templates . $template . ".php";
+        header("HTTP/1.0 200 OK");
         include $this -> templates . "layout.php";
-    }
-
-    public function show_error_page($error_message, $page_title){
-        include $this -> templates . "error.php";
     }
 
     public function redirect($path){

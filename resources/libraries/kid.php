@@ -23,8 +23,13 @@ class Kid{
         $this -> hidden = false;
     }
 
-    public function get_full_name(){
-        return $this -> last_name . ", " . $this -> first_name;
+    public function get_full_name($first_last=true, $seperator=', '){
+        if ($first_last){
+            $this -> last_name . $seperator . $this -> first_name;
+        }
+        else{
+            $this -> first_name . $seperator . $this -> last_name;
+        }
     }
 
     private function parse_comma_split($string){
@@ -38,10 +43,11 @@ class Kid{
         return [$string];
     }
 
-    public function update_value($name, $value){
+    public function update_preference($name, $value, &$old_value=NULL){
         $changed = true;
         switch ($name){
             case "status":
+                $old_value = $this -> status;
                 if ($this -> status !== $value){
                     $this -> status = $value;
                     $this -> status_update_time = time();
@@ -51,6 +57,7 @@ class Kid{
                 break;
 
             case "parents":
+                $old_value = $this -> parents;
                 if ($this -> parents !== $this -> parse_comma_split($value)){
                     $this -> parents = $this -> parse_comma_split($value);
                     break;
@@ -59,6 +66,7 @@ class Kid{
                 break;
 
             case "group":
+                $old_value = $this -> group;
                 if ($this -> group !== $value){
                     $this -> group = $value;
                     break;
@@ -67,6 +75,7 @@ class Kid{
                 break;
 
             case "full_name":
+                $old_value = $this -> full_name;
                 if ($this -> get_full_name() !== $this -> parse_comma_split($value)){
                     $full_name = $this -> parse_comma_split($value);
                     if (count($full_name) === 1){
@@ -81,6 +90,7 @@ class Kid{
                 break;
 
             case "first_name":
+                $old_value = $this -> first_name;
                 if ($this -> first_name !== $value){
                     $this -> first_name = $value;
                     break;
@@ -89,6 +99,7 @@ class Kid{
                 break;
 
             case "last_name":
+                $old_value = $this -> last_name;
                 if ($this -> last_name !== $value){
                     $this -> last_name = $value;
                     break;
@@ -97,6 +108,7 @@ class Kid{
                 break;
 
             case "hidden":
+                $old_value = $this -> hidden;
                 if ($this -> hidden !== $value){
                     $this -> hidden = $value;
                     break;
@@ -236,30 +248,4 @@ class Kid{
         return $response;
     }
 }
-
-function load_kids($path){
-    if (file_exists($path)){
-        return unserialize(file_get_contents($path));
-    }
-    return [];
-}
-
-function save_kids($kids, $path){
-    file_put_contents($path, serialize($kids));
-}
-
-function get_kid($id, $path){
-    if (is_array($path)){
-        $kids = $path;
-    }
-    else{
-        $kids = load_kids($path);
-    }
-    foreach ($kids as $kid){
-        if ($kid -> id == $id){
-            return $kid;
-        }
-    }
-}
-
 ?>

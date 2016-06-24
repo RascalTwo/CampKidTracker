@@ -8,8 +8,7 @@
         var username = $("#username_input").val();
         var password = $("#password_input").val();
         $.post("api/account/login", {username: username, password: password}, function(response){
-            response = JSON.parse(response);
-            message(response.message);
+            response = handleResponse(response);
             if (response.success){
                 window.location.href = response.redirect;
             }

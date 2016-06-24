@@ -113,10 +113,6 @@ class Account{
         }
     }
 
-    public function login(){
-        $this -> last_online = time();
-    }
-
     public function contact($kid_id){
         error_log(print_r("$kid_id Has had their status changed!", true));
     }
@@ -133,10 +129,11 @@ class Account{
         return $columns;
     }
 
-    public function update_preference($preference, $new_value){
+    public function update_preference($preference, $new_value, &$old_value=NULL){
         $changed = true;
         switch($preference){
             case "access_level":
+                $old_value = $this -> access_level;
                 if ($new_value !== $this -> access_level){
                     $this -> access_level = $new_value;
                     break;
@@ -145,6 +142,7 @@ class Account{
                 break;
 
             case "display_name":
+                $old_value = $this -> display_name;
                 if ($new_value !== $this -> display_name){
                     $this -> display_name = $new_value;
                     break;
@@ -153,6 +151,7 @@ class Account{
                 break;
 
             case "theme":
+                $old_value = $this -> theme;
                 if ($new_value !== $this -> theme){
                     $this -> theme = $new_value;
                     break;
@@ -161,6 +160,7 @@ class Account{
                 break;
 
             case "columns":
+                $old_value = $this -> columns;
                 $new_columns = $this -> parse_raw_columns($new_value);
                 foreach ($new_columns as $key => $_){
                     $new_columns[$key]["display"] = $this -> columns[$key]["display"];
@@ -174,6 +174,7 @@ class Account{
                 break;
 
             case "emails":
+                $old_value = $this -> contact["emails"];
                 if ($new_value !== implode(",", $this -> contact["emails"])){
                     $this -> contact["emails"] = explode(",", $new_value);
                     break;
@@ -182,6 +183,7 @@ class Account{
                 break;
 
             case "phones":
+                $old_value = $this -> contact["phones"];
                 if ($new_value !== implode(",", $this -> contact["phones"])){
                     $this -> contact["phones"] = explode(",", $new_value);
                     break;
@@ -260,25 +262,4 @@ class Account{
         return json_encode($this);
     }
 }
-
-function load_accounts($path){
-    if (file_exists($path)){
-        return unserialize(file_get_contents($path));
-    }
-    return [];
-}
-
-function save_accounts($accounts, $path){
-    file_put_contents($path, serialize($accounts));
-}
-
-function get_account($id, $path){
-    $accounts = load_accounts($path);
-    foreach ($accounts as $account){
-        if ($account -> id == $id){
-            return $account;
-        }
-    }
-}
-
 ?>

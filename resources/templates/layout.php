@@ -5,10 +5,12 @@
         <meta name="viewport" content="width=320, initial-scale=1">
         <title><?php echo $page_title; ?></title>
         <link rel="stylesheet" type="text/css" href="css/main.css">
-        <?php if ($css !== NULL){ ?>
-            <link rel="stylesheet" type="text/css" href="css/<?php echo $css ?>.css">
-        <?php } ?>
-        <script src="js/jquery-2.2.3.min.js"></script>
+        <?php if ($css !== NULL){
+            foreach ($css as $filename){
+                echo '<link rel="stylesheet" type="text/css" href="css/' . $filename . '.css">';
+            }
+        }
+        ?>
         <?php
         if ($js !== NULL){
             foreach ($js as $filename){
@@ -16,15 +18,30 @@
             }
         }
         ?>
+        <script src="js/jquery-2.2.3.min.js"></script>
         <script type="text/javascript">
+            $.ajaxSetup({
+                error: function(jqXHR, exception){
+                    message(jqXHR.status + " - " + jqXHR.statusText);
+                    console.log(jqXHR); //TODO Add redirection and message output - if any - here.
+                }
+            });
 
-            var get = {
+            function handleResponse(response){
+                response = JSON.parse(response);
+                if (response.hasOwnProperty("message")){
+                    message(message);
+                }
+                return response;
+            }
+
+            var get = { //Finish or remove.
                 byId: function(id){
                     return document.getElementById(id);
                 }
             }
 
-            function addListener(event, target, callback){
+            function addListener(event, target, callback){ //Finish or remove.
                 if (target.addEventListener){
                     target.addEventListener(event, callback, false);
                 }

@@ -47,8 +47,8 @@
         }
 
         var theme = $("#theme_value")[0].checked ? "full" : "minimal";
-        var emails = comma_array_clean($("#email_addresses").val());
-        var phones = comma_array_clean($("#phone_numbers").val());
+        var emails = clean_comma_array($("#email_addresses").val());
+        var phones = clean_comma_array($("#phone_numbers").val());
         $.post("api/account/edit", {columns: columns, theme: theme, emails: emails, phones: phones}, function(response){
             response = JSON.parse(response);
             message(response.message);

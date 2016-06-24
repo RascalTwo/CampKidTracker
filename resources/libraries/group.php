@@ -25,7 +25,8 @@ class Group{
         return $array;
     }
 
-    public function update_value($name, $value){
+    public function update_preference($name, $value){ //Add old_value reference variable.
+        //TODO CONTINUE
         $changed = true;
         switch ($name){
             case "kids":
@@ -100,26 +101,6 @@ class Group{
         }
         $response .= "</td></tr>";
         return $response;
-    }
-}
-
-function load_groups($path){
-    if (file_exists($path)){
-        return unserialize(file_get_contents($path));
-    }
-    return [];
-}
-
-function save_groups($accounts, $path){
-    file_put_contents($path, serialize($accounts));
-}
-
-function get_group($id, $path){
-    $groups = load_groups($path);
-    foreach ($groups as $group){
-        if ($group -> id == $id){
-            return $group;
-        }
     }
 }
 ?>
