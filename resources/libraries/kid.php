@@ -23,13 +23,14 @@ class Kid{
         $this -> hidden = false;
     }
 
-    public function get_full_name($first_last=true, $seperator=', '){
-        if ($first_last){
-            $this -> last_name . $seperator . $this -> first_name;
+    public function get_full_name(){
+        if ($this -> first_name == NULL){
+            return $this -> last_name;
         }
-        else{
-            $this -> first_name . $seperator . $this -> last_name;
+        if ($this -> last_name == NULL){
+            return $this -> first_name;
         }
+        return $this -> last_name . ", " . $this -> first_name;
     }
 
     private function parse_comma_split($string){
@@ -75,11 +76,12 @@ class Kid{
                 break;
 
             case "full_name":
-                $old_value = $this -> full_name;
-                if ($this -> get_full_name() !== $this -> parse_comma_split($value)){
+                $old_value = $this -> get_full_name();
+                if ($this -> get_full_name() !== implode(", ", $this -> parse_comma_split($value))){
                     $full_name = $this -> parse_comma_split($value);
                     if (count($full_name) === 1){
                         $this -> first_name = $full_name[0];
+                        $this -> last_name = NULL;
                         break;
                     }
                     $this -> last_name = $full_name[0];
@@ -246,6 +248,10 @@ class Kid{
         }
         $response .= "</tr>";
         return $response;
+    }
+
+    public function json(){
+        return json_encode($this);
     }
 }
 ?>

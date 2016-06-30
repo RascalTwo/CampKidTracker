@@ -102,5 +102,9 @@ class Group{
         $response .= "</td></tr>";
         return $response;
     }
+
+    public function json(){
+        return json_encode($this);
+    }
 }
 ?>

@@ -11,6 +11,7 @@
             }
         }
         ?>
+        <script src="js/jquery-2.2.3.min.js"></script>
         <?php
         if ($js !== NULL){
             foreach ($js as $filename){
@@ -18,19 +19,25 @@
             }
         }
         ?>
-        <script src="js/jquery-2.2.3.min.js"></script>
         <script type="text/javascript">
             $.ajaxSetup({
                 error: function(jqXHR, exception){
-                    message(jqXHR.status + " - " + jqXHR.statusText);
-                    console.log(jqXHR); //TODO Add redirection and message output - if any - here.
+                    try{
+                        response = handleResponse(jqXHR.responseText)
+                        if (response.hasOwnProperty("redirect")){
+                            window.location.href = response.redirect;
+                        }
+                    }
+                    catch(err){
+                        message(jqXHR.status + " - " + jqXHR.statusText);
+                    }
                 }
             });
 
             function handleResponse(response){
                 response = JSON.parse(response);
                 if (response.hasOwnProperty("message")){
-                    message(message);
+                    message(response.message);
                 }
                 return response;
             }

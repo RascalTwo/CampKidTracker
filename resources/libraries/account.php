@@ -28,47 +28,56 @@ class Account{
         $this -> access_level = $access_level;
 
         $this -> columns = [
-            "full_name" => [
+            [
+                "identifier" => "full_name",
                 "display" => "Full Name",
                 "enabled" => true,
                 "position" => 1
             ],
-            "parents" => [
+            [
+                "identifier" => "parents",
                 "display" => "Parents",
                 "enabled" => true,
                 "position" => 2
             ],
-            "status" => [
+            [
+                "identifier" => "status",
                 "display" => "Status",
                 "enabled" => true,
                 "position" => 3
             ],
-            "actions" => [
+            [
+                "identifier" => "actions",
                 "display" => "Actions",
                 "enabled" => true,
                 "position" => 4
             ],
-            "changed" => [
+            [
+                "identifier" => "changed",
                 "display" => "Changed",
                 "enabled" => true,
                 "position" => 5
             ],
-            "group" =>[
+            [
+                "identifier" => "group",
                 "display" => "Group",
                 "enabled" => true,
                 "position" => 6
             ],
-            "first_name" => [
+            [
+                "identifier" => "first_name",
                 "display" => "First Name",
                 "enabled" => false,
                 "position" => 7
             ],
-            "last_name" => [
+            [
+                "identifier" => "last_name",
                 "display" => "Last Name",
                 "enabled" => false,
                 "position" => 8
             ],
-            "id" => [
+            [
+                "identifier" => "id",
                 "display" => "ID",
                 "enabled" => false,
                 "position" => 9

@@ -36,7 +36,7 @@ function get_objects_by($property_values, $property, $data){
     $returning_objects = [];
     foreach ($data as $object){
         foreach ($property_values as $key => $value){
-            if ($object[$property] === $value){
+            if ($object -> {$property} == $value){
                 $returning_objects[$key] = $object;
             }
         }
@@ -76,6 +76,7 @@ function remove_objects($objects, $path, $data=NULL){
             unset($data[$data_key]);
         }
     }
+    $data = array_values($data);
     save_data($data, $path);
 }
 
