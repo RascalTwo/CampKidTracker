@@ -222,7 +222,7 @@ class Account{
 
     public function table_header($editing){
         $this -> sort_columns();
-        $response = "<tr>";
+        $response = "<tr class='table_header'>";
 
         foreach ($this -> columns as $header){
             if (!$editing && $header["enabled"]){
@@ -262,7 +262,7 @@ class Account{
         $response .= ucfirst($this -> access_level);
         $response .= "</td>";
         $response .= "<td>";
-        $response .= "<span class='time when' time='" . $this -> last_online . "'>TEXT</span>";
+        $response .= "<span class='time when' time='" . $this -> last_online . "'></span>";
         $response .= "</td>";
         $response .= "<td>";
         $response .= "<input type='button' value='Delete Account' id='" . $this -> id . "-delete_account'>";

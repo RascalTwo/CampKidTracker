@@ -23,7 +23,7 @@
     <span id="account_list">
         <table>
             <tbody id="account_table_body">
-                <tr class="account_header">
+                <tr class="table_header">
                     <th>Display Name</th>
                     <th>Username</th>
                     <th>Access Level</th>
@@ -72,7 +72,7 @@
         $.get("api/account/list", function(response){
             response = handleResponse(response);
             $("#account_table_body").children().each(function(){
-                if (this.className === "account_header"){
+                if (this.className === "table_header"){
                     return;
                 }
                 $(this).remove();

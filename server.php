@@ -75,7 +75,7 @@ $router -> get("/groups", function($router){
         $router -> redirect("/login");
         return;
     }
-    $router -> show_template("groups", "Groups");
+    $router -> show_template("groups", "Groups", ["kid_table", "utility"]);
     return;
 });
 
@@ -564,7 +564,18 @@ $router -> post("/api/kid/add", function($router){
                        $_POST["first_name"],
                        $_POST["last_name"],
                        $_POST["parents"],
-                       $_POST["status"]);
+                       $_POST["status"],
+                       $_POST["group"]);
+
+    $groups = load_data($config["database"]["groups"]);
+    foreach ($groups as $key => $_){
+        if ($groups[$key] -> id != $new_kid -> id){
+            continue;
+        }
+        $groups[$key] -> add_kid($new_kid -> id);
+        break;
+    }
+    save_data($groups, $config["database"]["groups"]);
 
     $logger -> log(new Creation_Event($_SERVER["REMOTE_ADDR"],
                                       get_self() -> username,
@@ -726,7 +737,6 @@ $router -> post("/api/kid/edit", function($router){
         return;
     }
     $changed_fields = [];
-    $groups = load_data($config["database"]["groups"]);
     $kids = load_data($config["database"]["kids"]);
     foreach ($kids as $kid_key => $_){
         if ($kids[$kid_key] -> id != $_POST["id"]){
@@ -741,6 +751,18 @@ $router -> post("/api/kid/edit", function($router){
                     if (get_self() -> has_access("mod")){
                         if ($kids[$kid_key] -> update_preference($data_key, $value)){
                             $changed_fields[] = ucfirst($data_key);
+                            $old_value;
+                            if ($kids[$kid_key] -> update_preference("group", NULL, $old_value){
+                                $groups = load_data($config["database"]["groups"]);
+                                foreach ($groups as $group => $_){
+                                    if ($groups[$group] -> id != $old_value){
+                                        continue;
+                                    }
+                                    $groups[$group] -> remove_kid($kids[$kid_key] -> id);
+                                    break;
+                                }
+                                save_data($groups, $config["database"]["groups"]);
+                            }
                         }
                     }
                     else{
@@ -754,19 +776,31 @@ $router -> post("/api/kid/edit", function($router){
                     break;
 
                 case "group":
-                    $kid_group_key = NULL;
-                    foreach ($groups as $group_key => $_){
-                        if ($group_key -> id != $value){
-                            continue;
-                        }
-                        break;
-                    }
-                    if ($value === ""){ // remove from $previous_group.
-                        //TODO CONTINUE
+                    $groups = load_data($config["database"]["groups"]);
+                    if ($value === ""){
+                        $value = NULL;
                     }
                     $old_value;
                     if ($kids[$kid_key] -> update_preference($data_key, $value, $old_value)){
-
+                        if ($old_value !== NULL){
+                            foreach ($groups as $group => $_){
+                                if ($groups[$group] -> id != $old_value){
+                                    continue;
+                                }
+                                $groups[$group] -> remove_kid($kids[$kid_key] -> id);
+                                break;
+                            }
+                        }
+                        if ($value !== NULL){
+                            foreach ($groups as $group => $_){
+                                if ($groups[$group] -> id != $value){
+                                    continue;
+                                }
+                                $groups[$group] -> add_kid($kids[$kid_key] -> id);
+                                break;
+                            }
+                        }
+                        save_data($groups, $config["database"]["groups"]);
                     }
                     break;
 
@@ -989,7 +1023,7 @@ $router -> get("/api/group/list", function($router){
 
     $response = [];
     foreach (load_data($config["database"]["groups"]) as $group){
-        $response[] = $group;
+        $response[] = $group -> to_table_row();
     }
 
     header("HTTP/1.0 200 OK");

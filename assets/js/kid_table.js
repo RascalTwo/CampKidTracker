@@ -1,10 +1,10 @@
-function renderKids(rendering_kids, edit){
+function renderKids(rendering_kids, edit, table_id = "kid_table_body"){
     if (!Array.isArray(rendering_kids)){
         rendering_kids = [rendering_kids];
     }
     for (var i = 0; i < rendering_kids.length; i++){
         if ($("tr#" + rendering_kids[i].id + "-kid").length === 0){
-            $("#kid_table_body > tr").last().after(kid_to_row(rendering_kids[i], edit));
+            $("#" + table_id + " > tr").last().after(kid_to_row(rendering_kids[i], edit));
         }
         else{
             $("tr#" + rendering_kids[i].id + "-kid").replaceWith(kid_to_row(rendering_kids[i], edit));
@@ -23,6 +23,7 @@ function updateKids(new_kids){
                 continue;
             }
             if (kids[i].modification_time === new_kids[j].modification_time && kids[i].status_update_time === new_kids[j].status_update_time && editing.indexOf(kids[i].id) === -1){
+                new_kids.splice(j, 1);
                 continue;
             }
             kids[i] = new_kids.splice(j, 1)[0];
@@ -155,17 +156,18 @@ function kid_to_row(kid, edit){
                 var options_html = "<option value=''>None</option>";
                 var group_name;
                 for (var i = 0; i < groups.length; i++){
-                    if (groups[i].id === kid.group){
+                    if (groups[i].id == kid.group){
                         group_name = groups[i].name;
                         if (!edit){
                             break;
                         }
                     }
                     if (edit){
-                        if (group.name === group_name){
-                            options_html += "<option selected value='" + group.id + "'>" + group.name + "</option>"
+                        if (groups[i].name === group_name){
+                            options_html += "<option selected value='" + groups[i].id + "'>" + groups[i].name + "</option>"
+                            continue;
                         }
-                        options_html += "<option value='" + group.id + "'>" + group.name + "</option>"
+                        options_html += "<option value='" + groups[i].id + "'>" + groups[i].name + "</option>"
                     }
                 }
                 if (edit){
@@ -248,6 +250,7 @@ $(document).on("click", "input[id$='-kid_confirm_edit']", function(event){
         post_data[property] = this.value;
     });
     post_data["group"] = $("#" + id + "-kid_group :selected").val();
+    console.log(post_data);
     $.post("api/kid/edit", post_data, function(response){
         response = handleResponse(response);
         if (response.success){

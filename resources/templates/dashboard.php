@@ -73,7 +73,7 @@
             last_name: $("#new_last_name").val(),
             status: $("input[name=new_status]:checked").val(),
             parents: $("#new_parents").val(),
-            group: $("#new_group :selected").val() //TODO - Test this.
+            group: $("#new_group :selected").val()
         };
         $.post("api/kid/add", post_data, function(response){
             updateKids(handleResponse(response).data);

@@ -67,12 +67,14 @@ class Group{
     public function remove_kid($id){
         if (array_key_exists($id, $this -> kids)){
             unset($this -> kids[$id]);
+            $this -> kids = array_values($this -> kids);
         }
     }
 
     public function remove_leader($id){
         if (array_key_exists($id, $this -> leaders)){
             unset($this -> leaders[$id]);
+            $this -> leaders = array_values($this -> leaders);
         }
     }
 

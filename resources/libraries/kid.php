@@ -11,13 +11,13 @@ class Kid{
     public $status_update_time;
     public $hidden;
 
-    public function __construct($id, $first_name, $last_name, $parents, $status){
+    public function __construct($id, $first_name, $last_name, $parents, $status, $group){
         $this -> id = $id;
         $this -> first_name = $first_name;
         $this -> last_name = $last_name;
         $this -> status = $status;
         $this -> parents = $this -> parse_comma_split($parents);
-        $this -> group;
+        $this -> group = $group;
         $this -> modification_time = time();
         $this -> status_update_time = time();
         $this -> hidden = false;
