@@ -131,9 +131,13 @@ class Account{
         $columns = [];
         foreach ($raw_columns as $raw_column){
             $key = explode(":", $raw_column)[0];
-            $enabled = explode(":", explode(",", $raw_column)[0])[1] === "true";
-            $position = explode(",", $raw_column)[1];
-            $columns[$key] = ["enabled" => $enabled, "position" => $position];
+            $position = explode(":", explode(",", $raw_column)[0])[1];
+            $enabled = explode(",", $raw_column)[1] === "true";
+            $columns[] = [
+                "identifier" => $key,
+                "enabled" => $enabled,
+                "position" => $position
+            ];
         }
         return $columns;
     }
@@ -171,8 +175,13 @@ class Account{
             case "columns":
                 $old_value = $this -> columns;
                 $new_columns = $this -> parse_raw_columns($new_value);
-                foreach ($new_columns as $key => $_){
-                    $new_columns[$key]["display"] = $this -> columns[$key]["display"];
+                foreach ($new_columns as $new_key => $_){
+                    foreach ($this -> columns as $old_key => $_){
+                        if ($new_columns[$new_key]["identifier"] != $this -> columns[$old_key]["identifier"]){
+                            continue;
+                        }
+                        $new_columns[$new_key]["display"] = $this -> columns[$old_key]["display"];
+                    }
                 }
 
                 if ($new_columns !== $this -> columns){
@@ -228,12 +237,12 @@ class Account{
 
         if ($editing){
             $response .= "<tr>";
-            foreach ($this -> columns as $key => $header){
+            foreach ($this -> columns as $header){
                 $response .= "<td>";
-                $response .= "Position: <input id='" . $key . "-position' type='text' value='" . $header["position"] . "' size='1'>";
+                $response .= "Position: <input id='" . $header["identifier"] . "-position' type='text' value='" . $header["position"] . "' size='1'>";
                 $response .= "<br>";
-                $response .= "<label for='" . $key . "'>Enabled: </label>";
-                $response .= "<input id='" . $key . "-enabled' type='checkbox' " . (($header["enabled"]) ? "checked" : "") . "></input>";
+                $response .= "<label for='" . $header["identifier"] . "'>Enabled: </label>";
+                $response .= "<input id='" . $header["identifier"] . "-enabled' type='checkbox' " . (($header["enabled"]) ? "checked" : "") . "></input>";
                 $response .= "</td>";
             }
             $response .= "</tr>";

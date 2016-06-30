@@ -21,39 +21,24 @@
 </span>
 <script type="text/javascript">
     $("#save_button").click(function(){
-        var options = {};
+        var post_data = {
+            theme: $("#theme_value")[0].checked ? "full" : "minimal",
+            emails: clean_comma_array($("#email_addresses").val()),
+            phones: clean_comma_array($("#phone_numbers").val())
+        }
+        var columns = "";
         $("td > input").each(function(index){
             var element_info = this.id.split("-");
-            var value;
-            if (element_info[1] === "enabled"){
-                value = this.checked;
-            }
-            else{
-                value = this.value;
-            }
-            if (!(element_info[0] in options)){
-                options[element_info[0]] = {};
-            }
-            options[element_info[0]][element_info[1]] = value;
+            var value = element_info[1] === "enabled" ? this.checked : this.value
+            columns += columns[columns.length-1] === "," ? value + ";" : element_info[0] + ":" + value + ",";
         });
+        columns = columns.slice(0, -1);
+        post_data["columns"] = columns;
 
-        var keys = Object.keys(options)
-        var columns = "";
-        for (var i = 0; i < keys.length; i++){
-            columns += keys[i] + ":" + options[keys[i]].enabled + "," + options[keys[i]].position;
-            if (i != keys.length - 1){
-                columns += ";";
-            }
-        }
-
-        var theme = $("#theme_value")[0].checked ? "full" : "minimal";
-        var emails = clean_comma_array($("#email_addresses").val());
-        var phones = clean_comma_array($("#phone_numbers").val());
-        $.post("api/account/edit", {columns: columns, theme: theme, emails: emails, phones: phones}, function(response){
-            response = JSON.parse(response);
-            message(response.message);
+        $.post("api/account/edit", post_data, function(response){
+            response = handleResponse(response);
             if (response.success){
-                $("#columns").html(response.html);
+                $("#columns").html(response.data);
             }
         });
     });

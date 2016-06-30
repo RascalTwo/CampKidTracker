@@ -363,10 +363,7 @@ $router -> get("/api/account/list", function($router){
  * @param string $_POST 'emails'  - Email addresses.
  * @param string $_POST 'phones'  - Phone numbers.
  *
- * @return string JSON
- *     boolean 'success'
- *     string  'message'
- *     object  'data'    - New account data.
+ * @return string HTML <tr>
  */
 $router -> post("/api/account/edit", function($router){
     global $config, $logger;
@@ -409,7 +406,7 @@ $router -> post("/api/account/edit", function($router){
     echo json_encode([
         "success" => true,
         "message" => count($changed_fields) > 0 ? "Preferences updated." : "No preferences updated.",
-        "data" => get_self()
+        "data" => get_self() -> table_header(true)
     ]);
     return;
 }, ["columns" => false, "theme" => false, "emails" => false, "phones" => false]);
