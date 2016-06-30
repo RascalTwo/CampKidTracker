@@ -74,7 +74,7 @@ function kid_to_row(kid, edit){
                     html += "<input size='10' type='text' id='" + kid.id + "-last_name' value='" + kid.last_name + "'>"
                     continue;
                 }
-                html += kid.first_name;
+                html += kid.last_name;
                 break;
 
             case "full_name":

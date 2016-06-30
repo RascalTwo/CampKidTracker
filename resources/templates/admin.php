@@ -23,84 +23,93 @@
     <span id="account_list">
         <table>
             <tbody id="account_table_body">
-                <tr>
+                <tr class="account_header">
                     <th>Display Name</th>
                     <th>Username</th>
                     <th>Access Level</th>
                     <th>Last Login</th>
-                    <th>Options</th>
+                    <th>Actions</th>
                 </tr>
             </tbody>
         </table>
     </span>
 </span>
 <script type="text/javascript">
+    var self = <?php echo get_self() -> json(); ?>;
+    var kids = <?php echo as_json("kids", function($var){return $var -> hidden;}); ?>;
+    var groups = <?php echo as_json("groups"); ?>;
+
+    var last_poll = 0;
+    var editing = [];
+
+    self.renderColumns = self.columns.filter(function(column){
+        return column.enabled;
+    }).sort(function(a, b){
+        return a.position - b.position;
+    });
+
+    renderKids(kids, false);
+
     function pollUpdate(){
         $.get("api/kid/poll", function(response){
             if (last_poll !== response){
-                var append = false;
-                if (last_poll === 0){
-                    append = true;
-                }
-                $.post("api/kid/list", {since: last_poll, editing: editing.join(","), append: append, hidden: true}, function(response){
-                    response = JSON.parse(response);
-                    for (var i = 0; i < response.length; i++){
-                        if (append){
-                            $("#kid_table_body > tr").last().after(response[i].html);
-                        }
-                        else{
-                            $("#kid_table_body > tr#" + response[i].id).replaceWith(response[i].html)
-                        }
-                    }
-                })
                 last_poll = response;
-                setTimeout(updateClocks, 1000);
+                $.post("api/kid/list", {since: last_poll, hidden: true}, function(response){
+                    response = handleResponse(response);
+                    kids = kids.sort(function(a, b){
+                        return a.id - b.id;
+                    })
+                    response.data = response.data.sort(function(a, b){
+                        return a.id - b.id;
+                    })
+                    updateKids(response.data);
+                })
             }
         })
     }
 
     function listAccounts(){
         $.get("api/account/list", function(response){
-            response = JSON.parse(response);
-            for (var i = 0; i < response.length; i++){
-                $("#account_table_body > tr").last().after(response[i]);
+            response = handleResponse(response);
+            $("#account_table_body").children().each(function(){
+                if (this.className === "account_header"){
+                    return;
+                }
+                $(this).remove();
+            });
+            for (var i = 0; i < response.data.length; i++){
+                $("#account_table_body > tr").last().after(response.data[i]);
             }
         });
     }
 
     $("#create_account").click(function(){
-        var display_name = $("#display_name").val();
-        var username = $("#username").val();
-        var password = $("#password").val();
-        var access_level = $("input[name=access_level]:checked").val();
-        $.post("api/account/create", {display_name: display_name, username: username, password: password, access_level: access_level}, function(response){
-            response = JSON.parse(response);
-            //message(response.message);
-            console.log(response.message);
+        var post_data = {
+            display_name: $("#display_name").val(),
+            username: $("#username").val(),
+            password: $("#password").val(),
+            access_level: $("input[name=access_level]:checked").val()
+        }
+        $.post("api/account/create", post_data, function(response){
+            response = handleResponse(response);
+            console.log(response);
             if (response.success){
                 listAccounts();
             }
         });
     });
 
-    $("body").on("click", "input[id$='-delete_account']", function(event){
+    $(document).on("click", "input[id$='-delete_account']", function(event){
         var id = event.target.id.split("-")[0];
         $.post("api/account/delete", {id: id}, function(response){
-            response = JSON.parse(response);
-            $("tr[id='" + id + "']").replaceWith(response);
+            response = handleResponse(response);
+            $("tr#" + id + "-account").remove();
         });
     });
 
-
-    var last_poll = 0;
-
     pollUpdate();
+    listAccounts();
 
     setInterval(pollUpdate, 2500);
-
     setInterval(updateClocks, 60000);
-
-    var editing = [];
-
-    listAccounts();
 </script>

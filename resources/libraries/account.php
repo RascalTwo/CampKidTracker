@@ -251,7 +251,7 @@ class Account{
     }
 
     public function to_table_row(){
-        $response = "<tr id='" . $this -> id . "'>";
+        $response = "<tr id='" . $this -> id . "-account'>";
         $response .= "<td>";
         $response .= $this -> display_name;
         $response .= "</td>";
@@ -262,12 +262,7 @@ class Account{
         $response .= ucfirst($this -> access_level);
         $response .= "</td>";
         $response .= "<td>";
-        if ($this -> last_online === NULL){
-            $response .= "Never";
-        }
-        else{
-            $response .= date("m-d-y g:i A", $this -> last_online);
-        }
+        $response .= "<span class='time when' time='" . $this -> last_online . "'>TEXT</span>";
         $response .= "</td>";
         $response .= "<td>";
         $response .= "<input type='button' value='Delete Account' id='" . $this -> id . "-delete_account'>";
