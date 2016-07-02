@@ -752,7 +752,7 @@ $router -> post("/api/kid/edit", function($router){
                         if ($kids[$kid_key] -> update_preference($data_key, $value)){
                             $changed_fields[] = ucfirst($data_key);
                             $old_value;
-                            if ($kids[$kid_key] -> update_preference("group", NULL, $old_value){
+                            if ($kids[$kid_key] -> update_preference("group", NULL, $old_value)){
                                 $groups = load_data($config["database"]["groups"]);
                                 foreach ($groups as $group => $_){
                                     if ($groups[$group] -> id != $old_value){
@@ -983,7 +983,7 @@ $router -> post("/api/group/get", function($router){
         "success" => true,
         "message" => "Group retrived.",
         "data" => [
-            "group" => $group,
+            "group" => $group -> to_table_row($_POST["edit"]),
             "kids" => [],
             "leaders" => []
         ]
@@ -1023,7 +1023,7 @@ $router -> get("/api/group/list", function($router){
 
     $response = [];
     foreach (load_data($config["database"]["groups"]) as $group){
-        $response[] = $group -> to_table_row();
+        $response[] = $group -> to_table_row(false);
     }
 
     header("HTTP/1.0 200 OK");
@@ -1086,7 +1086,8 @@ $router -> post("/api/group/edit", function($router){
                                       get_self() -> username,
                                       "group",
                                       ["Name" => $groups[$group_key] -> name,
-                                       "ID" => $groups[$group_key] -> id]));
+                                       "ID" => $groups[$group_key] -> id],
+                                        array_keys($_POST)));
         break;
     }
 
@@ -1095,7 +1096,7 @@ $router -> post("/api/group/edit", function($router){
     echo json_encode([
         "success" => true,
         "message" => "Group '" . $groups[$group_key] -> name . "' edited.",
-        "data" => $goups[$group_key]
+        "data" => $groups[$group_key] -> to_table_row(false)
     ]);
     return;
 }, ["id" => true, "name" => true]);

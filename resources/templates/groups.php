@@ -131,7 +131,7 @@
         $.post("api/group/get", {id: id, edit: true}, function(response){
             response = JSON.parse(response);
             if (response.success){
-                $("tr#" + id + "-group").replaceWith(response.html);
+                $("tr#" + id + "-group").replaceWith(response.data.group);
             }
         });
     });
@@ -146,7 +146,7 @@
             response = JSON.parse(response);
             message(response.message);
             if (response.success){
-                $("tr#" + id + "-group").replaceWith(response.html);
+                $("tr#" + id + "-group").replaceWith(response.data);
             }
         });
     });
