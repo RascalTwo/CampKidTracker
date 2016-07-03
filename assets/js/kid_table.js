@@ -37,8 +37,8 @@ function updateKids(new_kids){
     }
     if (redrawKids.length !== 0){
         renderKids(redrawKids, false);
-        updateClocks();
     }
+    updateClocks();
 }
 
 function removeKid(kid){
@@ -145,6 +145,7 @@ function kid_to_row(kid, edit){
                 break;
 
             case "changed":
+                console.log(kid.modification_time, kid.status_update_time)
                 html += "Modified:<br>";
                 html += "<span class='time when' time='" + kid.modification_time + "'></span>";
                 html += "<br>";

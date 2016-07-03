@@ -1131,7 +1131,7 @@ $router -> post("/api/history/list", function($router){ //Overhall along with lo
     }
     usort($history, "compare_time");
     foreach ($history as $event){
-        $response[] = $event;
+        $response[] = $event -> to_table_row();
     }
     header("HTTP/1.0 200 OK");
     echo json_encode([

@@ -2,7 +2,7 @@
 $DOCUMENT_ROOT = realpath(__DIR__ . "/..") . "/";
 $RESOURCES = realpath(__DIR__ . "/../resources") . "/";
 if (getenv("OPENSHIFT_DATA_DIR") == false){
-    $DATA_DIR = $DOCUMENT_ROOT . "/data/";
+    $DATA_DIR = $DOCUMENT_ROOT . "data/";
 }
 else{
     $DATA_DIR = getenv("OPENSHIFT_DATA_DIR");

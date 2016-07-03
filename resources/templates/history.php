@@ -24,8 +24,8 @@
                 }
                 $.post("api/history/list", {since: last_poll}, function(response){
                     response = JSON.parse(response);
-                    for (var i = 0; i < response.length; i++){
-                        $("#history_table_body > tr").last().after(response[i].html);
+                    for (var i = 0; i < response.data.length; i++){
+                        $("#history_table_body > tr").last().after(response.data[i]);
                     }
                 })
                 last_poll = response;
