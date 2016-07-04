@@ -31,8 +31,7 @@ function updateClocks(){
             }
         }
         else{
-            var date = new Date();
-            date.setMilliseconds(parseInt(this.getAttribute("time")));
+            var date = new Date(parseInt(this.getAttribute("time"))*1000);
             message = date;
         }
         this.innerHTML = message;
