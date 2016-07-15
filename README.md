@@ -1,40 +1,13 @@
-# TODO
+# Camp Kid Tracker
 
-- Add group functoinalilty.
-- Add note functionality.
-- Add account login extensions.
-- Make ajax error output message if available.
-- Make documentation much better.
-- Add json() methods to Account, Group, and Kid.
-- Choose to either accept JSON from client or cleanup custom column preferences.
-- Overhall logging to include more detail.
-- Maybe use references while modifying array values, not sure.
-    - https://stackoverflow.com/questions/3430194/performance-of-for-vs-foreach-in-php
-- Add javascript catch if response is not returned in place of response.success
-- Replace hide/unhide buttons with checkboxes
-- Implement caching.
-- Remove dupe comma split to array function in Kid class.
-- Make history navigatable by day.
-- Improve updateClocks() efficency.
-- Pass all relevent data to the client and have them organize it into tables and such.
-- Create `full` and `minimal` CSS themes.
-- Verify client -> server data validation.
-- Clear forms on submission.
-- Sanitize server -> client data.
-- Sanitize client -> server data.
-- Make tool to generate documentation pages.
+A website that allows for the tracking of participating children with their arrival status.
 
-# Snippets
+With every page being constantly update, one can be confident the currently displayed content is accurate.
 
-    header("HTTP/1.0 200 OK");
+Additionally allowing filtering and searching by groups and various other factors.
 
-        echo json_encode([
-            "success" => false,
-            "message" => "Must be logged in.",
-            "redirect" => "http://" . $_SERVER["HTTP_HOST"] . "/login"
-        ]);
+Lastly provides customizable access for multiple users.
 
- * @return string JSON
- *     boolean 'success'
- *     string  'message'
- *     array   'data'    - Something.
+All of these actions and more are fully logged, so not only can you trust, but you can verify when events actually happened.
+
+https://user-images.githubusercontent.com/9403665/129500590-9681126a-9883-4242-86c8-43636c875fad.mp4
